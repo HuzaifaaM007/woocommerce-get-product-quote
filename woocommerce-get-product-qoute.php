@@ -32,7 +32,7 @@ function wcgpq_wc_missing_notice()
     }
 }
 
-add_action('admin_notices', 'wpgq_wc_missing_notice');
+add_action('admin_notices', 'wcgpq_wc_missing_notice');
 
 
 function wcgpq_add_qoute_button_after_product_card()
