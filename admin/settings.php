@@ -22,7 +22,7 @@ function wcgpq_admin_settings()
         ),
         array(
             'title' => __('Admin Email', 'wcgpq'),
-            'desc' => __('Enter email here ', 'wcgpq'),
+            'desc' => __('Enter email here', 'wcgpq'),
             'id' => 'wcgpq_admin_email',
             'type' => 'text',
             'default' => '',
@@ -32,7 +32,7 @@ function wcgpq_admin_settings()
             'title' => __('Email Subject', 'wcgpq'),
             'id' => 'wcgpq_email_subject',
             'type' => 'text',
-            'deafult' => 'Product Quoatation',
+            'default' => 'Product Quotation',
             'desc_tip' => true,
             'description' => 'Subject for Product Quotation'
         ),
@@ -41,18 +41,18 @@ function wcgpq_admin_settings()
             'id' => 'wcgpq_email_template',
             'type' => 'textarea',
             'css' => 'min-width:400px; min-height:150px',
-            'default' => "",
+            'default' => "New Quote Request Received\n\nA customer has requested a quote for a product. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n\nProduct: {product_name}\nProduct URL: {product_link}\nQuantity: {quantity}\n\nCustomer Message:\n{message}\n\nYou can review and respond to this quote request from your admin dashboard:\n{admin_quote_link}\n\nRegards,\n{store_name}",
             'desc_tip' => true,
             'description' => 'use placeholders like {name} ,{email}, {comments}'
         ),
         array(
-            'type' => 'sectioned',
+            'type' => 'sectionend',
             'id' => 'wcgpq_email_settings_title'
         )
 
     );
 
-    return add_filter('wcgpq_admin_settings', $wcgpq_settings_array);
+    return $wcgpq_settings_array;
 }
 
 // Add settings tab
@@ -78,6 +78,4 @@ function wcgpq_save_settings()
     woocommerce_update_options(wcgpq_admin_settings());
 }
 
-add_action('woocommerce_update_options_wcgpq_settings','wcgpq_save_settings');
-
-
+add_action('woocommerce_update_options_wcgpq_settings', 'wcgpq_save_settings');
