@@ -30,7 +30,7 @@ function wcgpq_admin_settings()
         ),
                 array(
             'title' => __('Get product quote listing page', 'wcgpq'),
-            'desc' => __('Add get product quote in listing page for each product', 'wcgpq'),
+            'desc' => __('Add get product quote in details page of each product', 'wcgpq'),
             'id' => 'wcgpq_locations[product_details]',
             'type' => 'checkbox',
             'default' => 'yes'
