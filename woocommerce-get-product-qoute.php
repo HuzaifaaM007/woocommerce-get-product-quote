@@ -48,13 +48,13 @@ function wcgpq_add_qoute_button_after_product_card()
         return;
     }
 
-    $wcgpq_location = get_option('wcgpq_locations', []);
+    $wcgpq_locations = get_option('wcgpq_locations', []);
 
-    if (!array($wcgpq_location)) {
+    if (!array($wcgpq_locations)) {
         return;
     }
 
-    if (($wcgpq_location['product_list'] ?? 'no') === 'yes') {
+    if (($wcgpq_locations['product_list'] ?? 'no') === 'yes') {
 
         ?> 
         <button

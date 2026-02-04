@@ -21,6 +21,22 @@ function wcgpq_admin_settings()
             'id' => 'wcgpq_settings_title'
         ),
         array(
+            'title' => __('Get product quote listing page', 'wcgpq'),
+            'desc' => __('Add get product quote in listing page for each product', 'wcgpq'),
+            'id' => 'wcgpq_locations[product_list]',
+            'type' => 'checkbox',
+            'default' => 'yes'
+
+        ),
+                array(
+            'title' => __('Get product quote listing page', 'wcgpq'),
+            'desc' => __('Add get product quote in listing page for each product', 'wcgpq'),
+            'id' => 'wcgpq_locations[product_details]',
+            'type' => 'checkbox',
+            'default' => 'yes'
+
+        ),
+        array(
             'title' => __('Admin Email', 'wcgpq'),
             'desc' => __('Enter email here', 'wcgpq'),
             'id' => 'wcgpq_admin_email',
