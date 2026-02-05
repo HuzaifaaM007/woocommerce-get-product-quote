@@ -23,7 +23,8 @@ function wcgpq_admin_settings()
         array(
             'title' => __('Get product quote listing page', 'wcgpq'),
             'desc' => __('Add get product quote in listing page for each product', 'wcgpq'),
-            'id' => 'wcgpq_locations[product_list]',
+            // 'id' => 'wcgpq_locations[product_list]',
+            'id' => 'wcgpq_location_product_list',
             'type' => 'checkbox',
             'default' => 'no'
 
@@ -31,7 +32,8 @@ function wcgpq_admin_settings()
         array(
             'title' => __('Get product quote details page', 'wcgpq'),
             'desc' => __('Add get product quote in details page of each product', 'wcgpq'),
-            'id' => 'wcgpq_locations[product_details]',
+            // 'id' => 'wcgpq_locations[product_details]'
+            'id' => 'wcgpq_location_product_details',
             'type' => 'checkbox',
             'default' => 'no'
 
@@ -92,6 +94,13 @@ add_action('woocommerce_settings_tabs_wcgpq_settings', 'wcgpq_settings_tab_conte
 function wcgpq_save_settings()
 {
     woocommerce_update_options(wcgpq_admin_settings());
+
+    $locations = array(
+        'product_list' => get_option('wcgpq_location_product_list', 'no'),
+        'product_details' => get_option('wcgpq_location_product_details', 'no')
+    );
+
+    update_option('wcgpq_locations', $locations);
 }
 
 add_action('woocommerce_update_options_wcgpq_settings', 'wcgpq_save_settings');
