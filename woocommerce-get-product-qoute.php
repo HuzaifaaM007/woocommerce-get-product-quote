@@ -182,6 +182,38 @@ function wcgpq_handle_quote_request()
     }
 }
 
-function wcgpq_send_email($product, $name, $email, $phone, $quantity, $message) {
-    
+add_action('wp_ajax_wcgpq_send_quote', 'wcgpq_handle_quote_request');
+add_action('wp_ajax_nopriv_wcgpq_send_quote', 'wcgpq_handle_quote_request');
+
+function wcgpq_send_email($product, $name, $email, $phone, $quantity, $message)
+{
+
+    $admin_email = get_option('wcgpq_admin_email', get_option('admin_email'));
+
+    $subject = get_option('wcgpq_email_subject', 'Product Quotation');
+
+    $template = get_option('wcgpq_email_template', '');
+
+    if (empty($template)) {
+        $template = "New Quote Request Received\n\nA customer has requested a quote for a product. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n\nProduct: {product_name}\nProduct URL: {product_link}\nQuantity: {quantity}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
+    }
+
+    $product_name = $product->get_name();
+    $product_link = get_permalink($product->get_id());
+    $store_name = get_bloginfo('name');
+
+    $email_body = str_replace(
+        array('{name}', '{email}', '{product_name}', '{product_link}', '{quantity}', '{message}', '{store_name}'),
+        array($name, $email, $product_name, $product_link, $quantity, $message, $store_name),
+        $template
+    );
+
+    $headers = array(
+        'Content-Type: text/plain; charset=UTF-8',
+        'Reply-To: ' . $name . ' <' . $email . '>'
+    );
+
+    $sent = wp_mail($admin_email, $subject, $email_body, $headers);
+
+    return $sent;
 }
