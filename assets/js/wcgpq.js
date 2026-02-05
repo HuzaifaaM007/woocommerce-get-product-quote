@@ -15,7 +15,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function handleButtonClick() {
 
+
         const product_id = this.getAttribute('data-product-id');
+
 
         if (!product_id) {
             showMessage('Product ID not found', 'error')
@@ -44,10 +46,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         form_data.append('action', 'send_product_email');
         form_data.append('product_id', product_id);
-        form_data.append('nonce', 'wcgpq-product_quote_data_nonce');
+        form_data.append('nonce', 'wcgpq-product_quote_data.nonce');
 
         // request using FETCH API
-        fetch(wcgpq_product_quote_data.ajaxUrl, {
+        fetch(wcgpq_product_quote_data.ajaxurl, {
             method: 'POST',
             body: form_data,
             credentials: 'same-origin'
