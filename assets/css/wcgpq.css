@@ -1,5 +1,86 @@
-.wcgpq-button:disabled{
-     opacity: 0.6;
-     cursor: not-allowed;
+/* NEW: Popup overlay styles */
+#wcgpq-popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 999999;
+    justify-content: center;
+    align-items: center;
 }
 
+/* NEW: Popup box styles */
+#wcgpq-popup-box {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* NEW: Close button styles */
+#wcgpq-close-popup {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+}
+
+#wcgpq-close-popup:hover {
+    color: #333;
+}
+
+/* NEW: Form styles */
+#wcgpq-form input[type="text"],
+#wcgpq-form input[type="email"],
+#wcgpq-form input[type="number"],
+#wcgpq-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#wcgpq-form textarea {
+    resize: vertical;
+}
+
+#wcgpq-form label {
+    font-weight: 600;
+    color: #333;
+}
+
+#wcgpq-form p {
+    margin-bottom: 15px;
+}
+
+#wcgpq-form .button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+}
+
+.wcgpq-button {
+    margin-top: 10px;
+}
+
+.wcgpq-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* NEW: Submit button disabled state */
+#wcgpq-submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

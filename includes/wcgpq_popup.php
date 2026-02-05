@@ -15,22 +15,27 @@ function wcgpq_display_popup_form(){
                 <input type="hidden" name="product_id" id="wcgpq-product-id" value="">
                 
                 <p>
-                    <label for="wcgpq-name">Name</label><br>
+                    <label for="wcgpq-name">Name <span style="color:red;">*</span></label><br>
                     <input type="text" name="name" id="wcgpq-name" required>
                 </p>
 
                 <p>
-                    <label for="wcgpq-email">Email</label><br>
+                    <label for="wcgpq-email">Email <span style="color:red;">*</span></label><br>
                     <input type="email" name="email" id="wcgpq-email" required>
                 </p>
-
+        
                 <p>
-                    <label for="wcgpq-comments">Comments</label><br>
-                    <textarea name="comments" id="wcgpq-comments" rows="4" required></textarea>
+                    <label for="wcgpq-quantity">Quantity</label><br>
+                    <input type="number" name="quantity" id="wcgpq-quantity" value="1" min="1">
                 </p>
 
                 <p>
-                    <button type="submit" class="button">Submit Quote</button>
+                    <label for="wcgpq-message">Message</label><br>
+                    <textarea name="message" id="wcgpq-message" rows="4"></textarea>
+                </p>
+
+                <p>
+                    <button type="submit" class="button" id="wcgpq-submit-btn">Submit Quote</button>
                 </p>
             </form>
             <div id="wcgpq-form-response"></div>
@@ -39,6 +44,3 @@ function wcgpq_display_popup_form(){
     <?php
 }
 add_action('wp_footer', 'wcgpq_display_popup_form');
- 
-
-
