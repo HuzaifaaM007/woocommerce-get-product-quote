@@ -71,7 +71,7 @@ function wcgpq_add_quote_button_after_product_card()
     }
 }
 
-add_action('woocommerce_after_shop_loop_item', 'wcgpq_add_quote_button_after_product_card');
+// add_action('woocommerce_after_shop_loop_item', 'wcgpq_add_quote_button_after_product_card');
 
 function wcgpq_add_quote_button_after_add_to_cart()
 {
@@ -102,11 +102,66 @@ function wcgpq_add_quote_button_after_add_to_cart()
             <!-- data-product-url="<?php echo esc_attr(get_permalink($product->get_id())); ?>" -->
 
             Get Quote</button>
+    <?php
+    }
+}
+
+// add_action('woocommerce_after_add_to_cart_button', 'wcgpq_add_quote_button_after_add_to_cart');
+
+
+function wcgpq_add_quote_button_after_check_out_button()
+{
+
+    if (!wcgpq_woocommerce_active()) {
+        return;
+    }
+
+    // $product_id = get_the_ID();
+
+    // $product = wc_get_product($product_id);
+
+    $wcgpq_locations = get_option('wcgpq_locations', []);
+
+    if (!is_array($wcgpq_locations) || wc()->cart->is_empty()) {
+        return;
+    }
+
+
+    $cart_items = [];
+
+    foreach (wc()->cart->get_cart() as $cart_item) {
+        $product = $cart_item['data'];
+
+        $cart_items[] = [
+            'name' => $product->get_name(),
+            'price' => $product->get_price(),
+            'quantity' => $cart_item['quantity'],
+            'subtotal' => $cart_item['line_total'],
+            'tax' => $cart_item['line_tax'],
+            'sku' => $product->get_sku(),
+            'url' => get_permalink($product->get_id()),
+        ];
+    }
+
+    if (($wcgpq_locations['cart'] ?? 'no') === 'yes') {
+    ?>
+        <button
+            type="button"
+            class="wcgpq-cart-button button"
+            style="
+            padding-left: 1em;
+            font-size: 1.1em;
+            line-height :1.8em;
+            display:block
+            "
+            data-cart-count="<?php echo count($cart_items); ?>">
+            Get Quote
+        </button>
 <?php
     }
 }
 
-add_action('woocommerce_after_add_to_cart_button', 'wcgpq_add_quote_button_after_add_to_cart');
+add_action('woocommerce_after_cart_totals', 'wcgpq_add_quote_button_after_check_out_button');
 
 function wcgpq_load_assets()
 {
@@ -150,14 +205,14 @@ function wcgpq_handle_quote_request()
     }
 
     // Sanitize and validate form data
-    $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+    $cart_count = isset($_POST['cart_count']) ? intval($_POST['cart_count']) : 0;
     $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
     $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
     $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
     $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
     $message = isset($_POST['message']) ? sanitize_textarea_field($_POST['message']) : '';
 
-    if (!$product_id || !$name || !$email) {
+    if (!$cart_count || !$name || !$email) {
         wp_send_json_error('Fill all required fields');
         return;
     }
@@ -167,14 +222,36 @@ function wcgpq_handle_quote_request()
         return;
     }
 
-    $product = wc_get_product($product_id);
-
-    if (!$product) {
-        wp_send_json_error('Product not found!');
+    if ($cart_count <= 0) {
+        wp_send_json_error("cart is empty can't process");
         return;
     }
 
-    $email_sent = wcgpq_send_email($product, $name, $email, $phone, $quantity, $message);
+
+    // $product = wc_get_product($product_id);
+
+    // if (!$product) {
+    //     wp_send_json_error('Product not found!');
+    //     return;
+    // }
+
+    $cart_items = wc()->cart->get_cart();
+
+    // foreach (wc()->cart->get_cart() as $cart_item) {
+    //     $product = $cart_item['data'];
+
+    //     $cart_items[] = [
+    //         'name' => $product->get_name(),
+    //         'price' => $product->get_price(),
+    //         'quantity' => $cart_item['quantity'],
+    //         'subtotal' => $cart_item['line_total'],
+    //         'tax' => $cart_item['line_tax'],
+    //         'sku' => $product->get_sku(),
+    //         'url' => get_permalink($product->get_id()),
+    //     ];
+    // }
+
+    $email_sent = wcgpq_send_email($cart_items, $name, $email, $phone, $quantity, $message);
 
     if ($email_sent) {
         wp_send_json_success('Quote request send succesfully');
@@ -186,7 +263,7 @@ function wcgpq_handle_quote_request()
 add_action('wp_ajax_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 add_action('wp_ajax_nopriv_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 
-function wcgpq_send_email($product, $name, $email, $phone, $quantity, $message)
+function wcgpq_send_email($cart_items, $name, $email, $phone, $quantity, $message)
 {
 
     $admin_email = get_option('wcgpq_admin_email', get_option('admin_email'));
@@ -201,17 +278,29 @@ function wcgpq_send_email($product, $name, $email, $phone, $quantity, $message)
     $template = get_option('wcgpq_email_template', '');
 
     if (empty($template)) {
-        $template = "New Quote Request Received\n\nA customer has requested a quote for a product. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n\nProduct: {product_name}\nProduct URL: {product_link}\nQuantity: {quantity}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
+        $template = "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
     }
 
-    $product_name = $product->get_name();
-    $product_link = get_permalink($product->get_id());
+    $cart_items_text = "";
+    $total_quantity = 0;
+
+    foreach ($cart_items as  $cart_item) {
+        $product = $cart_item['data'];
+        $product_name = $product->get_name();
+        $product_link = get_permalink($product->get_id());
+        $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
+        $quantity = $cart_item['quantity'];
+        $total_quantity += $quantity;
+
+        $cart_items_text .= "- {$product_name} (Qty: {$quantity})\n  URL: {$product_link}\n Admin Link: {$admin_quote_link}\n\n";
+    }
+
     $store_name = get_bloginfo('name');
     $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
 
     $email_body = str_replace(
-        array('{name}', '{email}', '{product_name}', '{product_link}', '{quantity}', '{message}', '{store_name}', '{admin_quote_link}'),
-        array($name, $email, $product_name, $product_link, $quantity, $message, $store_name, $admin_quote_link),
+        array('{name}', '{email}', '{cart_items}', '{total_quantity}', '{message}', '{store_name}'),
+        array($name, $email, $cart_items_text, $total_quantity, $message, $store_name),
         $template
     );
 

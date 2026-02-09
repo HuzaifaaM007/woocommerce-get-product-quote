@@ -12,7 +12,9 @@ function wcgpq_display_popup_form(){
             <span id="wcgpq-close-popup">&times;</span>
             <h2>Request a Quote</h2>
             <form id="wcgpq-form">
-                <input type="hidden" name="product_id" id="wcgpq-product-id" value="">
+                <input type="hidden" name="cart_count" id="wcgpq-cart-count" value="">
+
+
                 
                 <p>
                     <label for="wcgpq-name">Name <span style="color:red;">*</span></label><br>
@@ -23,11 +25,11 @@ function wcgpq_display_popup_form(){
                     <label for="wcgpq-email">Email <span style="color:red;">*</span></label><br>
                     <input type="email" name="email" id="wcgpq-email" required>
                 </p>
-        
-                <p>
+
+                <!-- <p>
                     <label for="wcgpq-quantity">Quantity</label><br>
                     <input type="number" name="quantity" id="wcgpq-quantity" value="1" min="1">
-                </p>
+                </p> -->
 
                 <p>
                     <label for="wcgpq-message">Message</label><br>
