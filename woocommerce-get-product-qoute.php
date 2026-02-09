@@ -331,10 +331,10 @@ function wcgpq_configure_smtp($phpmailer)
     $phpmailer->Host  = 'smtp.gmail.com';
     $phpmailer->SMTPAuth = true;
     $phpmailer->Port = 587;
-    $phpmailer->Username = 'huzaifamurtaza007@gmail.com';
-    $phpmailer->Password = 'nqpj jkhw dmzc hnho';
+    $phpmailer->Username = get_option('wcgpq_mailer_username'); //'huzaifamurtaza007@gmail.com'
+    $phpmailer->Password = get_option('wcgpq_mailer_password'); //'nqpj jkhw dmzc hnho'
     $phpmailer->SMTPSecure = 'tls';
-    $phpmailer->From       = 'huzaifamurtaza007@gmail.com';
+    $phpmailer->From       = get_option('wcgpq_sender_mail'); //'huzaifamurtaza007@gmail.com'
     $phpmailer->FromName   = get_bloginfo('name');
 }
 

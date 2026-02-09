@@ -48,6 +48,39 @@ function wcgpq_admin_settings()
 
         ),
         array(
+            'title' => __('Mailing Host', 'wcgpq'),
+            'desc' => __('Enter the hosting service', 'wcgpq'),
+            'id' => 'wcgpq_mailing_service',
+            'type' => 'text',
+            'default' => 'smtp.gmail.com',
+            'desc_tip' => true
+
+        ),
+        array(
+            'title' => __('Mailer Username', 'wcgpq'),
+            'desc' => __('Enter the mailing service user name', 'wcgpq'),
+            'id' => 'wcgpq_mailer_username',
+            'type' => 'text',
+            'default' => '',
+            'desc_tip' => true
+        ),
+        array(
+            'title' => __('Mailer Password', 'wcgpq'),
+            'desc' => __('Enter the 16 digit password issued for the app', 'wcgpq'),
+            'id' => 'wcgpq_mailer_password',
+            'type' => 'text',
+            'default' => '',
+            'desc_tip' => true
+        ),
+        array(
+            'title' => __('Mailer From','wcgpq'),
+            'desc' => __('Enter the sender email','wcgpq'),
+            'id' => 'wcgpq_sender_mail',
+            'type' => 'text',
+            'default' => '',
+            'desc_tip' => true
+        ),
+        array(
             'title' => __('Admin Email', 'wcgpq'),
             'desc' => __('Enter email here', 'wcgpq'),
             'id' => 'wcgpq_admin_email',
@@ -55,6 +88,7 @@ function wcgpq_admin_settings()
             'default' => '',
             'desc_tip' => true
         ),
+
         array(
             'title' => __('Email Subject', 'wcgpq'),
             'id' => 'wcgpq_email_subject',
@@ -107,7 +141,7 @@ function wcgpq_save_settings()
     $locations = array(
         // 'product_list' => get_option('wcgpq_location_product_list', 'no'),
         // 'product_details' => get_option('wcgpq_location_product_details', 'no'),
-        'cart' => get_option('wcgpq_location_cart','no')
+        'cart' => get_option('wcgpq_location_cart', 'no')
     );
 
     update_option('wcgpq_locations', $locations);
