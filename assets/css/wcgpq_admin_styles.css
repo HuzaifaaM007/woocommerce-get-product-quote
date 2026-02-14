@@ -1,0 +1,31 @@
+
+.wcgpq-form-preview {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    max-width: 400px;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.wcgpq-form-preview input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-top: 5px;
+    align-self: center;
+}
+
+.wcgpq-form-preview button {
+    margin-top: 10px;
+    background: lightskyblue;
+}
+
+.wcgpq-form-preview button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

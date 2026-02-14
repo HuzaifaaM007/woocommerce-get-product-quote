@@ -37,7 +37,7 @@ function wcgpq_display_popup_form(){
                 </p>
 
                 <p>
-                    <button type="submit" class="button" id="wcgpq-submit-btn">Submit Quote</button>
+                    <button type="submit" class="button" id="wcgpq-submit-btn">Request Quote</button>
                 </p>
             </form>
             <div id="wcgpq-form-response"></div>
