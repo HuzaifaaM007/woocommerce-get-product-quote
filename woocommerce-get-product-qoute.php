@@ -126,6 +126,7 @@ function wcgpq_add_quote_button_after_check_out_button()
         return;
     }
 
+    error_log($wcgpq_locations['cart']);
 
     $cart_items = [];
 
@@ -154,10 +155,11 @@ function wcgpq_add_quote_button_after_check_out_button()
             line-height :1.8em;
             display:block
             "
-            data-cart-count="<?php echo count($cart_items); ?>">
+            data-cart-count="<?php echo count($cart_items);
+                                error_log("get quote button cart pressed " . print_r($cart_items, true)) ?>">
             Get Quote
         </button>
-<?php
+    <?php
     }
 }
 
@@ -180,7 +182,8 @@ function wcgpq_load_assets()
         'wcgpq-product-quote-button-css',
         plugin_dir_url(__FILE__) . 'assets/css/wcgpq.css',
         array(),
-        '1.0'
+        '1.0',
+        'all'
     );
 
     wp_localize_script(
@@ -209,6 +212,7 @@ function wcgpq_handle_quote_request()
     $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
     $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
     $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
+    $company = isset($_POST['company']) ? sanitize_text_field($_POST['company']) : '';
     $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
     $message = isset($_POST['message']) ? sanitize_textarea_field($_POST['message']) : '';
 
@@ -237,23 +241,34 @@ function wcgpq_handle_quote_request()
 
     $cart_items = wc()->cart->get_cart();
 
-    // foreach (wc()->cart->get_cart() as $cart_item) {
-    //     $product = $cart_item['data'];
 
-    //     $cart_items[] = [
-    //         'name' => $product->get_name(),
-    //         'price' => $product->get_price(),
-    //         'quantity' => $cart_item['quantity'],
-    //         'subtotal' => $cart_item['line_total'],
-    //         'tax' => $cart_item['line_tax'],
-    //         'sku' => $product->get_sku(),
-    //         'url' => get_permalink($product->get_id()),
-    //     ];
-    // }
+    $cart_items_text = "";
+    $total_quantity = 0;
 
-    $email_sent = wcgpq_send_email($cart_items, $name, $email, $phone, $quantity, $message);
+    foreach ($cart_items as  $cart_item) {
+        $product = $cart_item['data'];
+        $product_name = $product->get_name();
+        $product_link = get_permalink($product->get_id());
+        $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
+        $quantity = $cart_item['quantity'];
+        $total_quantity += $quantity;
+
+        $cart_items_text .= "- {$product_name} (Qty: {$quantity})\n  URL: {$product_link}\n Admin Link: {$admin_quote_link}\n\n";
+    }
+
+    $post_data = array(
+        'post_title' => $name . '-Quote Request',
+        'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $cart_items_text . "\n\n  Customer Message: \n" . $message,
+        'post_status' => 'publish',
+        'post_type' => 'quote_request',
+
+    );
+
+    $email_sent = wcgpq_send_email($cart_items, $name, $email, $phone, $company, $quantity, $message);
 
     if ($email_sent) {
+        wcgpq_insert_quote_request_post($post_data, $email);
+
         wp_send_json_success('Quote request send succesfully');
     } else {
         wp_send_json_error('Failed to send email. Please try again.');
@@ -263,7 +278,7 @@ function wcgpq_handle_quote_request()
 add_action('wp_ajax_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 add_action('wp_ajax_nopriv_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 
-function wcgpq_send_email($cart_items, $name, $email, $phone, $quantity, $message)
+function wcgpq_send_email($cart_items, $name, $email, $phone, $company, $quantity, $message)
 {
 
     $admin_email = get_option('wcgpq_admin_email', get_option('admin_email'));
@@ -278,7 +293,7 @@ function wcgpq_send_email($cart_items, $name, $email, $phone, $quantity, $messag
     $template = get_option('wcgpq_email_template', '');
 
     if (empty($template)) {
-        $template = "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
+        $template = "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n" . (!empty($company) ? "Company: {company}\n" : "") . "Phone: {phone}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
     }
 
     $cart_items_text = "";
@@ -299,8 +314,8 @@ function wcgpq_send_email($cart_items, $name, $email, $phone, $quantity, $messag
     $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
 
     $email_body = str_replace(
-        array('{name}', '{email}', '{cart_items}', '{total_quantity}', '{message}', '{store_name}'),
-        array($name, $email, $cart_items_text, $total_quantity, $message, $store_name),
+        array('{name}', '{email}', '{cart_items}', '{company}', '{total_quantity}', '{message}', '{store_name}'),
+        array($name, $email, $cart_items_text, $company, $total_quantity, $message, $store_name),
         $template
     );
 
@@ -339,3 +354,105 @@ function wcgpq_configure_smtp($phpmailer)
 }
 
 add_action('phpmailer_init', 'wcgpq_configure_smtp');
+
+function wcgpq_create_quote_request_cpt()
+{
+
+    $labels = array(
+        'name' => __('Quote Requests', 'textdomain'),
+        'singular' => __('Quote Request', 'textdomain')
+    );
+
+    $args = array(
+        'labels' => $labels,
+        'public' => false,
+        'show_ui' => true,
+        'show_in_menu' => true,
+        'menu_position' => 26,
+        'capability_type' => 'post',
+        'supports' => array('title', 'editor', 'custom-fields'),
+
+    );
+
+    register_post_type('quote_request', $args);
+}
+
+add_action('init', 'wcgpq_create_quote_request_cpt');
+
+function wcgpq_insert_quote_request_post($post_data, $email)
+{
+
+    $post_id = wp_insert_post($post_data);
+
+    if ($post_id) {
+        update_post_meta($post_id, '_customer_email', $email);
+    }
+
+    return $post_id;
+}
+
+function wcgpq_add_meta_box()
+{
+
+    add_meta_box(
+        'wcgpq_qote_request_details',
+        'Quote Request Details',
+        'wcgpq_render_meta_boxes',
+        'quote_request',
+        'normal',
+        'high'
+    );
+}
+
+add_action('add_meta_boxes', 'wcgpq_add_meta_box');
+
+function wcgpq_render_meta_boxes($post)
+{
+    wp_nonce_field('wcgpq_save_meta', 'wcgpq_meta_box_nonce');
+
+    $email = get_post_meta($post->ID, '_customer_email', true);
+
+    ?>
+    <table class="form-table">
+        <tr>
+            <th>
+                <label for="customer_email">Customer Email: </label>
+            </th>
+            <td>
+                <input
+                    type="email"
+                    name="customer_email"
+                    id="customer_email"
+                    value="<?php echo esc_attr($email); ?>"
+                    class="regular-text">
+            </td>
+        </tr>
+    </table>
+<?php
+
+}
+
+function wcgpq_save_meta_box_data($post_id)
+{
+    if (!isset($_POST['wcgpq_meta_box_nonce'])) {
+        return;
+    }
+
+    if (!wp_verify_nonce($_POST['wcgpq_meta_box_nonce'], 'wcgpq_save_meta')) {
+        return;
+    }
+
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+
+    if (!current_user_can('edit_post', $post_id)) {
+        return;
+    }
+
+    if (isset($_POST['customer_email'])) {
+        update_post_meta($post_id, '_customer_email', sanitize_email($_POST['customer_email']));
+    }
+}
+
+add_action('save_post', 'wcgpq_save_meta_box_data');

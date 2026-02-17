@@ -24,6 +24,11 @@ function wcgpq_get_all_forms()
                     'id' => 'form_a_phone_number',
                     'label' => 'Phone No',
                     'type' => 'text'
+                ),
+                array(
+                    'id' => 'form_a_message',
+                    'label' => 'Message',
+                    'type' => 'textarea'
                 )
             )
         ),
@@ -50,11 +55,12 @@ function wcgpq_get_all_forms()
                     'label' => 'Quantity Needed',
                     'type' => 'number'
                 ),
-                // array(
-                //     'id' => '',
-                //     'label' => '',
-                //     'type' => ''
-                // )
+                array(
+                    'id' => 'form_b_message',
+                    'label' => 'Message',
+                    'type' => 'textarea'
+                ),
+
             )
         ),
 
@@ -94,10 +100,9 @@ function wcgpq_generate_form_preview($form_id)
         $html .= '<label>' . $field['label'] . '</label><br>';
         $input_line = '<input type="' . $field['type'] . '" placeholder="' . $field['label'] . '" disabled>';
         // $html .= '<input type="' . $field['type'] . '" placeholder="' . $field['label'] . '" disabled>';
-        error_log('input html'. $input_line);
+        error_log('input html' . $input_line);
         $html .= $input_line;
         $html .= '</p>';
-
     }
 
     $html .= '<button type="submit" class="button" id="wcgpq-form-button" disabled>Request Quote</button>';
@@ -105,5 +110,3 @@ function wcgpq_generate_form_preview($form_id)
 
     return $html;
 }
-
-

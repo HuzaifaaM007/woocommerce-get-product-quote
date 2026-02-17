@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // const product_quote_buttons = document.querySelectorAll('.wcgpq-button');
     const cart_quote_button = document.querySelector('.wcgpq-cart-button');
 
+    
+
     const popup_overlay = document.getElementById('wcgpq-popup-overlay');
     const popup_close = document.getElementById('wcgpq-close-popup');
     const quote_form = document.getElementById('wcgpq-form');
@@ -28,6 +30,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Cart quote button
         if (cart_quote_button) {
+            console.log("cart_quote_button pressed");
+            
             cart_quote_button.addEventListener('click', handleCartButtonClick);
         }
 

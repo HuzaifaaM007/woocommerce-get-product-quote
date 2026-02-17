@@ -94,15 +94,17 @@ function wcgpq_admin_settings()
         'title' => 'Form Preview',
         'type' => 'title',
         'desc' => 'Below is how your selected form will look',
-        'id' => 'wcgpq_form_preview_header'
+        'id' => 'wcgpq_form_preview_header',
+        'desc_tip' => true
     );
 
     error_log("Adding wcgpq_preview field type to settings array");
-    /**removed these as in description wp_sanitization remove the input fields of the form*/
+
 
     $wcgpq_settings_array[] = array(
         'type' => 'wcgpq_preview',
         'id' => 'wcgpq_preview',
+        /**removed these as in description wp_sanitization remove the input fields of the form*/
         // 'desc' => wcgpq_generate_form_preview('form_a')
         'form_id' => 'form_a'
 
@@ -208,7 +210,7 @@ function wcgpq_admin_settings()
         'id' => 'wcgpq_email_template',
         'type' => 'textarea',
         'css' => 'min-width:400px; min-height:150px',
-        'default' => "New Quote Request Received\n\nA customer has requested a quote for a product. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n\nProduct: {product_name}\nProduct URL: {product_link}\nQuantity: {quantity}\n\nCustomer Message:\n{message}\n\nYou can review and respond to this quote request from your admin dashboard:\n{admin_quote_link}\n\nRegards,\n{store_name}",
+        'default' => "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\nPhone: {phone}\nCompany: {company}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nYou can review and manage products from your admin dashboard using the links above.\n\nRegards,\n{store_name}",
         'desc_tip' => true,
         'description' => 'use placeholders like {name} ,{email}, {comments}'
     );
@@ -245,6 +247,7 @@ function wcgpq_output_form_previews()
     </div>
 <?php
 }
+
 // Add settings tab
 function wcgpq_add_settings_tab($tabs)
 {
