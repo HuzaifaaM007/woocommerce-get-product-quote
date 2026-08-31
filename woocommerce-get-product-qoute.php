@@ -36,6 +36,23 @@ function wcgpq_wc_missing_notice()
 add_action('admin_notices', 'wcgpq_wc_missing_notice');
 
 
+function wcgpq_add_action_links(array $links)
+{
+
+    $settings_url = admin_url('admin.php?page=wc-settings&tab=wcgpq_settings');
+    $settings_link = sprintf(
+        '<a href="%s">%s</a>',
+        esc_url($settings_url),
+        __('Settings', 'wcgpq'),
+    );
+
+    array_unshift($links, $settings_link);
+
+    return $links;
+}
+
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'wcgpq_add_action_links');
+
 function wcgpq_add_quote_button_after_product_card()
 {
 
@@ -370,6 +387,10 @@ function wcgpq_create_quote_request_cpt()
         'show_in_menu' => true,
         'menu_position' => 26,
         'capability_type' => 'post',
+        'capabilities' => array(
+            'create_posts' =>  'do_not_allow',
+        ),
+        'map_meta_cap' => true,
         'supports' => array('title', 'editor', 'custom-fields'),
 
     );
