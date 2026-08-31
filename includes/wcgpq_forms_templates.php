@@ -105,7 +105,7 @@ function wcgpq_generate_form_preview($form_id)
         $html .= '</p>';
     }
 
-    $html .= '<button type="submit" class="button" id="wcgpq-form-button" disabled>Request Quote</button>';
+    $html .= '<br><button style="margin-top:10;" type="submit" class="button" id="wcgpq-form-button" disabled>Request Quote</button>';
     $html .= '</div>';
 
     return $html;
