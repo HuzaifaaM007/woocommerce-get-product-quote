@@ -64,6 +64,27 @@ function wcgpq_admin_settings()
     //     'default' => 'no'
 
     // ),
+
+    $wcgpq_settings_array[] =   array(
+        'title' => __('Get product quote cart page', 'wcgpq'),
+        'desc' => __('Add get product quote in shop page for each product', 'wcgpq'),
+        // 'id' => 'wcgpq_locations[product_list]',
+        'id' => 'wcgpq_location_product_list',
+        'type' => 'checkbox',
+        'default' => 'no'
+
+    );
+
+    $wcgpq_settings_array[] =   array(
+        'title' => __('Get product quote cart page', 'wcgpq'),
+        'desc' => __('Add get product quote in product details page', 'wcgpq'),
+        // 'id' => 'wcgpq_locations[product_list]',
+        'id' => 'wcgpq_location_product_details',
+        'type' => 'checkbox',
+        'default' => 'no'
+
+    );
+
     $wcgpq_settings_array[] =   array(
         'title' => __('Get product quote cart page', 'wcgpq'),
         'desc' => __('Add get product quote in listing page for all products in cart', 'wcgpq'),
@@ -251,7 +272,7 @@ function wcgpq_output_form_previews()
 // Add settings tab
 function wcgpq_add_settings_tab($tabs)
 {
-    $tabs['wcgpq_settings'] = __('Product Quotation', 'wcgpq');
+    $tabs['wcgpq_settings'] = __('Get a Quote', 'wcgpq');
     return $tabs;
 }
 
@@ -270,13 +291,13 @@ function wcgpq_save_settings()
 {
     woocommerce_update_options(wcgpq_admin_settings());
 
-    $locations = array(
-        // 'product_list' => get_option('wcgpq_location_product_list', 'no'),
-        // 'product_details' => get_option('wcgpq_location_product_details', 'no'),
-        'cart' => get_option('wcgpq_location_cart', 'no')
-    );
+    // $locations = array(
+    // 'product_list' => get_option('wcgpq_location_product_list', 'no'),
+    // 'product_details' => get_option('wcgpq_location_product_details', 'no'),
+    //     'cart' => get_option('wcgpq_location_cart', 'no')
+    // );
 
-    update_option('wcgpq_locations', $locations);
+    // update_option('wcgpq_locations', $locations);
 }
 
 add_action('woocommerce_update_options_wcgpq_settings', 'wcgpq_save_settings');
