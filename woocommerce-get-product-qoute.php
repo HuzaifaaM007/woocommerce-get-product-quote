@@ -53,6 +53,59 @@ function wcgpq_add_action_links(array $links)
 
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'wcgpq_add_action_links');
 
+function wcgpq_get_quote_button()
+{
+
+    $product_id = 0;
+
+    if (!wcgpq_woocommerce_active()) {
+        return;
+    }
+
+    $is_enabled_product_list_page = get_option('wcgpq_location_product_list');
+    $is_enabled_product_details_page = get_option('wcgpq_location_product_details');
+    $is_enabled_cart_page = get_option('wcgpq_location_cart');
+
+
+    if (is_shop() && !$is_enabled_product_list_page) {
+        global $product;
+        $product_id = $product->get_id();
+        return;
+    }
+    if (is_product() && !$is_enabled_product_details_page) {
+        global $product;
+        $product_id = $product->get_id();
+        return;
+    }
+
+    if (is_cart() && !$is_enabled_cart_page) {
+        error_log("printing line 78 wcgpq: " . is_cart() . " and " . $is_enabled_cart_page);
+        return;
+    }
+
+
+
+    if (is_cart() && $is_enabled_cart_page) {
+        $cart_count = count(wc()->cart->get_cart());
+    }
+
+?>
+    <button
+        type="button"
+        class="wcgpq-get-quote-button button"
+        data-product-id="<?php echo $product_id ?>"
+        data-cart-count="<?php echo $cart_count ?? 0 ?>">
+        Get a Quote 
+    </button>
+    <?php
+
+}
+
+add_action('woocommerce_after_shop_loop_item', 'wcgpq_get_quote_button');
+add_action('woocommerce_after_add_to_cart_button', 'wcgpq_get_quote_button');
+add_action('woocommerce_after_cart_totals', 'wcgpq_get_quote_button');
+
+
 function wcgpq_add_quote_button_after_product_card()
 {
 
@@ -72,7 +125,7 @@ function wcgpq_add_quote_button_after_product_card()
 
     if (($wcgpq_locations['product_list'] ?? 'no') === 'yes') {
 
-?>
+    ?>
         <button
             type="button"
             class="wcgpq-button button"
@@ -180,7 +233,7 @@ function wcgpq_add_quote_button_after_check_out_button()
     }
 }
 
-add_action('woocommerce_after_cart_totals', 'wcgpq_add_quote_button_after_check_out_button');
+// add_action('woocommerce_after_cart_totals', 'wcgpq_add_quote_button_after_check_out_button');
 
 function wcgpq_load_assets()
 {
