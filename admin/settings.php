@@ -227,8 +227,18 @@ function wcgpq_admin_settings()
     );
 
     $wcgpq_settings_array[] = array(
-        'title' => __('Email Template', 'wcgpq'),
-        'id' => 'wcgpq_email_template',
+        'title' => __('Email Template for Quote from Cart', 'wcgpq'),
+        'id' => 'wcgpq_email_template_for_cart_quote',
+        'type' => 'textarea',
+        'css' => 'min-width:400px; min-height:150px',
+        'default' => "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\nPhone: {phone}\nCompany: {company}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nYou can review and manage products from your admin dashboard using the links above.\n\nRegards,\n{store_name}",
+        'desc_tip' => true,
+        'description' => 'use placeholders like {name} ,{email}, {comments}'
+    );
+
+    $wcgpq_settings_array[] = array(
+        'title' => __('Email Template for single Product Quote', 'wcgpq'),
+        'id' => 'wcgpq_email_template_for_product_quote',
         'type' => 'textarea',
         'css' => 'min-width:400px; min-height:150px',
         'default' => "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\nPhone: {phone}\nCompany: {company}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nYou can review and manage products from your admin dashboard using the links above.\n\nRegards,\n{store_name}",
