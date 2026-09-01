@@ -57,6 +57,7 @@ function wcgpq_get_quote_button()
 {
 
     $product_id = 0;
+    $button_class = 'product';
 
     if (!wcgpq_woocommerce_active()) {
         return;
@@ -67,14 +68,15 @@ function wcgpq_get_quote_button()
     $is_enabled_cart_page = get_option('wcgpq_location_cart');
 
 
-    if (is_shop() && !$is_enabled_product_list_page) {
+    if (is_shop() || is_product()) {
         global $product;
         $product_id = $product->get_id();
+        $button_class = 'product';
+    }
+    if (is_shop() && !$is_enabled_product_list_page) {
         return;
     }
     if (is_product() && !$is_enabled_product_details_page) {
-        global $product;
-        $product_id = $product->get_id();
         return;
     }
 
@@ -87,15 +89,16 @@ function wcgpq_get_quote_button()
 
     if (is_cart() && $is_enabled_cart_page) {
         $cart_count = count(wc()->cart->get_cart());
+        $button_class = 'cart';
     }
 
 ?>
     <button
         type="button"
-        class="wcgpq-get-quote-button button"
+        class="wcgpq-get-quote-button button wcgpq-<?php echo $button_class ?>"
         data-product-id="<?php echo $product_id ?>"
         data-cart-count="<?php echo $cart_count ?? 0 ?>">
-        Get a Quote 
+        Get a Quote
     </button>
     <?php
 
@@ -204,13 +207,13 @@ function wcgpq_add_quote_button_after_check_out_button()
         $product = $cart_item['data'];
 
         $cart_items[] = [
-            'name' => $product->get_name(),
-            'price' => $product->get_price(),
+            'name'     => $product->get_name(),
+            'price'    => $product->get_price(),
             'quantity' => $cart_item['quantity'],
             'subtotal' => $cart_item['line_total'],
-            'tax' => $cart_item['line_tax'],
-            'sku' => $product->get_sku(),
-            'url' => get_permalink($product->get_id()),
+            'tax'      => $cart_item['line_tax'],
+            'sku'      => $product->get_sku(),
+            'url'      => get_permalink($product->get_id()),
         ];
     }
 
@@ -261,7 +264,7 @@ function wcgpq_load_assets()
         'wcgpq_product_quote_data',
         array(
             'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('wcgpq_product_quote_nonce')
+            'nonce'   => wp_create_nonce('wcgpq_product_quote_nonce')
         )
     );
     // }
@@ -271,20 +274,32 @@ add_action('wp_enqueue_scripts', 'wcgpq_load_assets');
 
 function wcgpq_handle_quote_request()
 {
+    $cart_count = 0;
+    $product_id = 0;
+
+
 
     if (!isset($_POST['nonce'])  || !wp_verify_nonce($_POST['nonce'], 'wcgpq_product_quote_nonce')) {
         wp_send_json_error('Security Check Failed');
         return;
     }
 
+
+    if (isset($_POST['cart_count'])) {
+        $cart_count = isset($_POST['cart_count']) ? intval($_POST['cart_count']) : 0;
+    }
+
+    if (isset($_POST['product_id'])) {
+        $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
+    }
     // Sanitize and validate form data
-    $cart_count = isset($_POST['cart_count']) ? intval($_POST['cart_count']) : 0;
-    $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
-    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
-    $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
-    $company = isset($_POST['company']) ? sanitize_text_field($_POST['company']) : '';
-    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
-    $message = isset($_POST['message']) ? sanitize_textarea_field($_POST['message']) : '';
+    $name     = isset($_POST['name'])     ? sanitize_text_field($_POST['name'])        : '';
+    $email    = isset($_POST['email'])    ? sanitize_email($_POST['email'])            : '';
+    $phone    = isset($_POST['phone'])    ? sanitize_text_field($_POST['phone'])       : '';
+    $company  = isset($_POST['company'])  ? sanitize_text_field($_POST['company'])     : '';
+    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity'])                 : 1;
+    $message  = isset($_POST['message'])  ? sanitize_textarea_field($_POST['message']) : '';
+    $is_cart  = isset($_POST['is_cart'])  ? 1 : 0;
 
     if (!$cart_count || !$name || !$email) {
         wp_send_json_error('Fill all required fields');
@@ -296,11 +311,15 @@ function wcgpq_handle_quote_request()
         return;
     }
 
-    if ($cart_count <= 0) {
+    if ($cart_count <= 0 && is_cart()) {
         wp_send_json_error("cart is empty can't process");
         return;
     }
 
+    if (!$product_id && is_shop() && is_product()) {
+        wp_send_json_error("No product id found");
+        return;
+    }
 
     // $product = wc_get_product($product_id);
 
@@ -309,32 +328,67 @@ function wcgpq_handle_quote_request()
     //     return;
     // }
 
-    $cart_items = wc()->cart->get_cart();
+    $post_data    = array();
+    $cart_items   = array();
+    $product_text = "";
+
+    if (is_cart()) {
+        error_log("is cart page 335 ");
+        $cart_items      = wc()->cart->get_cart();
+        $cart_items_text = "";
+        $total_quantity  = 0;
+
+        foreach ($cart_items as  $cart_item) {
+            $product          = $cart_item['data'];
+            $product_name     = $product->get_name();
+            $product_link     = get_permalink($product->get_id());
+            $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
+            $quantity         = $cart_item['quantity'];
+            $total_quantity  += $quantity;
+
+            $cart_items_text .= "- {$product_name} (Qty: {$quantity})\n  URL: {$product_link}\n Admin Link: {$admin_quote_link}\n\n";
+        }
+
+        $post_data = array(
+            'post_title'   => $name . '-Quote Request',
+            'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $cart_items_text . "\n\n  Customer Message: \n" . $message,
+            'post_status'  => 'publish',
+            'post_type'    => 'quote_request',
+
+        );
+    } elseif (is_shop() || is_product()) {
+        $product      = wc_get_product($product_id);
 
 
-    $cart_items_text = "";
-    $total_quantity = 0;
+        if ($product) {
+            $product_name     = $product->get_name();
+            $sku              =  $product->get_sku();
+            $price            =  $product->get_price();
+            $is_in_stock      =  $product->is_in_stock();
+            $product_link     =  $product->get_permalink();
+            $admin_quote_link =  admin_url('post.php?post=' . $product_id . '&action=edit');
 
-    foreach ($cart_items as  $cart_item) {
-        $product = $cart_item['data'];
-        $product_name = $product->get_name();
-        $product_link = get_permalink($product->get_id());
-        $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
-        $quantity = $cart_item['quantity'];
-        $total_quantity += $quantity;
 
-        $cart_items_text .= "- {$product_name} (Qty: {$quantity})\n  URL: {$product_link}\n Admin Link: {$admin_quote_link}\n\n";
+            $product_text     =  "- {$product_name} (Qty: {$quantity})\n";
+            $product_text    .=  "  URL: {$product_link}\n";
+            $product_text    .=  "  Admin Link: {$admin_quote_link}\n";
+            $product_text    .=  "  Available Stock: {$is_in_stock}\n";
+            $product_text    .=  "  Current Price: {$price}";
+
+            $post_data = array(
+                'post_title'   => $name . '-Quote Request',
+                'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $product_text . "\n\n  Customer Message: \n" . $message,
+                'post_status'  => 'publish',
+                'post_type'    => 'quote_request',
+
+            );
+        }
     }
 
-    $post_data = array(
-        'post_title' => $name . '-Quote Request',
-        'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $cart_items_text . "\n\n  Customer Message: \n" . $message,
-        'post_status' => 'publish',
-        'post_type' => 'quote_request',
 
-    );
 
-    $email_sent = wcgpq_send_email($cart_items, $name, $email, $phone, $company, $quantity, $message);
+
+    $email_sent = wcgpq_send_email($cart_items, $product_text,  $name, $email, $phone, $company, $quantity, $message);
 
     if ($email_sent) {
         wcgpq_insert_quote_request_post($post_data, $email);
@@ -348,9 +402,10 @@ function wcgpq_handle_quote_request()
 add_action('wp_ajax_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 add_action('wp_ajax_nopriv_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 
-function wcgpq_send_email($cart_items, $name, $email, $phone, $company, $quantity, $message)
+function wcgpq_send_email(array $cart_items, string $product_text, string $name, string $email, string $phone, string $company, string|int $quantity, string $message)
 {
 
+    $store_name  = get_bloginfo('name');
     $admin_email = get_option('wcgpq_admin_email', get_option('admin_email'));
 
     error_log('WCGPQ: Admin Email: ' . $admin_email);
@@ -360,34 +415,58 @@ function wcgpq_send_email($cart_items, $name, $email, $phone, $company, $quantit
     error_log('WCGPQ: Attempting to send email to: ' . $admin_email);
     error_log('WCGPQ: Subject: ' . $subject);
 
-    $template = get_option('wcgpq_email_template', '');
+    $email_body = "";
+    error_log("cart items: " . print_r($cart_items, true));
+    if (!empty($cart_items)) {
+        error_log("is cart items empty: " . print_r($cart_items));
+        $cart_quote_template = get_option('wcgpq_email_template_for_cart_quote', '');
 
-    if (empty($template)) {
-        $template = "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n" . (!empty($company) ? "Company: {company}\n" : "") . "Phone: {phone}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
-    }
+        if (empty($cart_quote_template)) {
+            $cart_quote_template = "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n" . (!empty($company) ? "Company: {company}\n" : "") . "Phone: {phone}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
+        }
 
-    $cart_items_text = "";
-    $total_quantity = 0;
+        $cart_items_text = "";
+        $total_quantity  = 0;
 
-    foreach ($cart_items as  $cart_item) {
-        $product = $cart_item['data'];
-        $product_name = $product->get_name();
-        $product_link = get_permalink($product->get_id());
+        foreach ($cart_items as  $cart_item) {
+            $product          =  $cart_item['data'];
+            $product_name     =  $product->get_name();
+            $product_link     =  get_permalink($product->get_id());
+            $admin_quote_link =  admin_url('post.php?post=' . $product->get_id() . '&action=edit');
+            $quantity         =  $cart_item['quantity'];
+            $total_quantity  +=  $quantity;
+
+            $cart_items_text .=  "- {$product_name} (Qty: {$quantity})\n  URL: {$product_link}\n Admin Link: {$admin_quote_link}\n\n";
+        }
+
+
         $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
-        $quantity = $cart_item['quantity'];
-        $total_quantity += $quantity;
 
-        $cart_items_text .= "- {$product_name} (Qty: {$quantity})\n  URL: {$product_link}\n Admin Link: {$admin_quote_link}\n\n";
+        $email_body = str_replace(
+            array('{name}', '{email}', '{cart_items}', '{company}', '{total_quantity}', '{message}', '{store_name}'),
+            array($name, $email, $cart_items_text, $company, $total_quantity, $message, $store_name),
+            $cart_quote_template
+        );
+
+        error_log(" cart email body: " . $email_body);
+    } elseif ($product_text !== "") {
+        $product_quote_template = get_option('wcgpq_email_template_for_product_quote', '');
+
+        if (empty($product_quote_template)) {
+            $product_quote_template = "New Quote Request Received\n\nA customer has requested a quote for a product. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n" . (!empty($company) ? "Company: {company}\n" : "") . "Phone: {phone}\n\nRequested Product:\n{product_details}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
+        }
+
+        $email_body = str_replace(
+            array('{name}', '{email}', '{company}', '{phone}', '{product_details}', '{message}', '{store_name}'),
+            array($name, $email, $company, $phone, $product_text, $message, $store_name),
+            $product_quote_template
+        );
+
+        error_log(" product email body: " . $email_body);
     }
 
-    $store_name = get_bloginfo('name');
-    $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
 
-    $email_body = str_replace(
-        array('{name}', '{email}', '{cart_items}', '{company}', '{total_quantity}', '{message}', '{store_name}'),
-        array($name, $email, $cart_items_text, $company, $total_quantity, $message, $store_name),
-        $template
-    );
+
 
     $headers = array(
         'Content-Type: text/plain; charset=UTF-8',
@@ -410,16 +489,16 @@ function wcgpq_send_email($cart_items, $name, $email, $phone, $company, $quantit
     return $sent;
 }
 
-function wcgpq_configure_smtp($phpmailer)
+function wcgpq_configure_smtp(object $phpmailer)
 {
     $phpmailer->isSMTP();
     $phpmailer->Host  = 'smtp.gmail.com';
     $phpmailer->SMTPAuth = true;
     $phpmailer->Port = 587;
-    $phpmailer->Username = get_option('wcgpq_mailer_username'); //'huzaifamurtaza007@gmail.com'
+    $phpmailer->Username = get_option('wcgpq_mailer_username'); //'example@gmail.com'
     $phpmailer->Password = get_option('wcgpq_mailer_password'); //'nqpj jkhw dmzc hnho'
     $phpmailer->SMTPSecure = 'tls';
-    $phpmailer->From       = get_option('wcgpq_sender_mail'); //'huzaifamurtaza007@gmail.com'
+    $phpmailer->From       = get_option('wcgpq_sender_mail'); //'example@gmail.com'
     $phpmailer->FromName   = get_bloginfo('name');
 }
 
