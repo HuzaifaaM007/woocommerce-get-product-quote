@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 function wcgpq_display_popup_form()
 {
 
-    $wcgpq_selected_form = get_option('wcgpq_form_type','form_a');
+    $wcgpq_selected_form = get_option('wcgpq_form_type', 'form_a');
 
 
 ?>
@@ -22,10 +22,11 @@ function wcgpq_display_popup_form()
             <h2>Request a Quote</h2>
             <?php if ($wcgpq_selected_form === 'form_a'): ?>
                 <form id="wcgpq-form">
-                    <input type="hidden" name="cart_count" id="wcgpq-cart-count" value="">
-
-
-
+                    <?php if (is_cart()): ?>
+                        <input type="hidden" name="cart_count" id="wcgpq-cart-count" value="">
+                    <?php elseif (is_shop() || is_product()) : ?>
+                        <input type="hidden" name="product_id" id="wcgpq-product-id" value="">
+                    <?php endif; ?>
                     <p>
                         <label for="wcgpq-name">Name <span style="color:red;">*</span></label><br>
                         <input type="text" name="name" id="wcgpq-name" required>
@@ -52,9 +53,11 @@ function wcgpq_display_popup_form()
                 </form>
             <?php elseif ($wcgpq_selected_form === 'form_b'): ?>
                 <form id="wcgpq-form">
-                    <input type="hidden" name="cart_count" id="wcgpq-cart-count" value="">
-
-
+                    <?php if (is_cart()): ?>
+                        <input type="hidden" name="cart_count" id="wcgpq-cart-count" value="">
+                    <?php elseif (is_shop() || is_product()) : ?>
+                        <input type="hidden" name="product_id" id="wcgpq-product-id" value="">
+                    <?php endif; ?>
 
                     <p>
                         <label for="wcgpq-name">Full Name <span style="color:red;">*</span></label><br>
