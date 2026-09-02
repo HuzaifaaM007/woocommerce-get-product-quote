@@ -97,7 +97,7 @@ function wcgpq_get_quote_button()
     <button
         type="button"
         class="wcgpq-get-quote-button button wcgpq-<?php echo $button_class ?>"
-        data-product-id="<?php echo $product_id ?>"
+        data-product-id="<?php echo $product_id ?? 0 ?>"
         data-cart-count="<?php echo $cart_count ?? 0 ?>">
         Get a Quote
     </button>
@@ -410,16 +410,16 @@ function wcgpq_handle_quote_request()
 
             if ($is_html) {
                 error_log('is html line 409');
-                $product_text  = '<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px;">';
-                $product_text .= '  <tr style="background-color: #f2f2f2;"><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Product</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Qty</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Price</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Stock</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Actions</th></tr>';
-                $product_text .= '  <tr>';
-                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;"><a href="' . esc_url($product_link) . '" style="color: #007cba; text-decoration: none; font-weight: bold;">' . esc_html($product_name) . '</a></td>';
-                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($quantity) . '</td>';
-                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($price) . '</td>';
-                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($is_in_stock) . '</td>';
-                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;"><a href="' . esc_url($admin_quote_link) . '" style="color: #007cba; text-decoration: none;">View in Admin</a></td>';
-                $product_text .= '  </tr>';
-                $product_text .= '</table>';
+                $product_text     = '<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px;">';
+                $product_text    .= '  <tr style="background-color: #f2f2f2;"><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Product</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Qty</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Price</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Stock</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Actions</th></tr>';
+                $product_text    .= '  <tr>';
+                $product_text    .= '    <td style="padding: 8px; border: 1px solid #ddd;"><a href="' . esc_url($product_link) . '" style="color: #007cba; text-decoration: none; font-weight: bold;">' . esc_html($product_name) . '</a></td>';
+                $product_text    .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($quantity) . '</td>';
+                $product_text    .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($price) . '</td>';
+                $product_text    .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($is_in_stock) . '</td>';
+                $product_text    .= '    <td style="padding: 8px; border: 1px solid #ddd;"><a href="' . esc_url($admin_quote_link) . '" style="color: #007cba; text-decoration: none;">View in Admin</a></td>';
+                $product_text    .= '  </tr>';
+                $product_text    .= '</table>';
             } else {
                 $product_text     =  "- {$product_name} (Qty: {$quantity})\n";
                 $product_text    .=  "  URL: {$product_link}\n";
