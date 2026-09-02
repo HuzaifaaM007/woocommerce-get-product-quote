@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     }
     function openPopup(data, is_cart) {
-        if (!popup_overlay || !quote_form || !cart_count_input) {
+        if (!popup_overlay || !quote_form || (is_cart && !cart_count_input)) {
             console.error('Popup elements not found!');
 
 
