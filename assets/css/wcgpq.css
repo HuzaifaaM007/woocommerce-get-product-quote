@@ -1,3 +1,7 @@
+
+:root {
+    --wcgpq-btn-radius : 4px;
+}
 /* NEW: Popup overlay styles */
 #wcgpq-popup-overlay {
     display: none;
@@ -83,4 +87,34 @@
 #wcgpq-submit-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.wcgpq-get-quote-button {
+    display: flex !important; /* Changed from inline-flex to flex */
+    width: 100% !important;   /* Spans full width or forces full row break */
+    flex-basis: 100% !important; /* Forces flex parent to break row */
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 40px;
+    padding: 8px 16px !important;
+    margin: 10px 10px 0 0 !important; /* Spacing above the button */
+
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: var(--wcgpq-btn-radius);
+
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    text-align: center;
+    box-sizing: border-box;
+    text-decoration: none;
+    clear: both !important;
+}
+
+.wcgpq-product {
+    margin-top: 10px !important;
+    width: 100% !important; /* Ensures wrapper takes whole line */
+    flex-basis: 100% !important;
 }
