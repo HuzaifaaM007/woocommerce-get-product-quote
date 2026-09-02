@@ -40,6 +40,7 @@ function wcgpq_add_action_links(array $links)
 {
 
     $settings_url = admin_url('admin.php?page=wc-settings&tab=wcgpq_settings');
+
     $settings_link = sprintf(
         '<a href="%s">%s</a>',
         esc_url($settings_url),
@@ -56,22 +57,22 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'wcgpq_add_action
 function wcgpq_get_quote_button()
 {
 
-    $product_id = 0;
-    $button_class = 'product';
+    $product_id   =  0;
+    $button_class =  'product';
 
     if (!wcgpq_woocommerce_active()) {
         return;
     }
 
-    $is_enabled_product_list_page = get_option('wcgpq_location_product_list');
-    $is_enabled_product_details_page = get_option('wcgpq_location_product_details');
-    $is_enabled_cart_page = get_option('wcgpq_location_cart');
+    $is_enabled_product_list_page    =  get_option('wcgpq_location_product_list');
+    $is_enabled_product_details_page =  get_option('wcgpq_location_product_details');
+    $is_enabled_cart_page            =  get_option('wcgpq_location_cart');
 
 
     if (is_shop() || is_product()) {
         global $product;
-        $product_id = $product->get_id();
-        $button_class = 'product';
+        $product_id   =  $product->get_id();
+        $button_class =  'product';
     }
     if (is_shop() && !$is_enabled_product_list_page) {
         return;
@@ -88,8 +89,8 @@ function wcgpq_get_quote_button()
 
 
     if (is_cart() && $is_enabled_cart_page) {
-        $cart_count = count(wc()->cart->get_cart());
-        $button_class = 'cart';
+        $cart_count   =  count(wc()->cart->get_cart());
+        $button_class =  'cart';
     }
 
 ?>
@@ -117,8 +118,6 @@ function wcgpq_add_quote_button_after_product_card()
     if (!wcgpq_woocommerce_active() || !$product) {
         return;
     }
-
-
 
     $wcgpq_locations = get_option('wcgpq_locations', []);
 
@@ -274,6 +273,8 @@ add_action('wp_enqueue_scripts', 'wcgpq_load_assets');
 
 function wcgpq_handle_quote_request()
 {
+
+    $config     = require_once plugin_dir_path(__FILE__) . 'includes/wcgpq_config.php';
     $cart_count = 0;
     $product_id = 0;
 
@@ -293,15 +294,16 @@ function wcgpq_handle_quote_request()
         $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
     }
     // Sanitize and validate form data
-    $name     = isset($_POST['name'])     ? sanitize_text_field($_POST['name'])        : '';
-    $email    = isset($_POST['email'])    ? sanitize_email($_POST['email'])            : '';
-    $phone    = isset($_POST['phone'])    ? sanitize_text_field($_POST['phone'])       : '';
-    $company  = isset($_POST['company'])  ? sanitize_text_field($_POST['company'])     : '';
-    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity'])                 : 1;
-    $message  = isset($_POST['message'])  ? sanitize_textarea_field($_POST['message']) : '';
-    $is_cart  = isset($_POST['is_cart'])  ? 1 : 0;
+    $name       =  isset($_POST['name'])       ?  sanitize_text_field($_POST['name'])        : '';
+    $email      =  isset($_POST['email'])      ?  sanitize_email($_POST['email'])            : '';
+    $phone      =  isset($_POST['phone'])      ?  sanitize_text_field($_POST['phone'])       : '';
+    $company    =  isset($_POST['company'])    ?  sanitize_text_field($_POST['company'])     : '';
+    $quantity   =  isset($_POST['quantity'])   ?  intval($_POST['quantity'])                 :  1;
+    $message    =  isset($_POST['message'])    ?  sanitize_textarea_field($_POST['message']) : '';
+    $is_cart    =  isset($_POST['is_cart'])    ?  1 : 0;
+    $is_product =  isset($_POST['is_product']) ?  1 : 0;
 
-    if (!$cart_count || !$name || !$email) {
+    if (($is_cart && !$cart_count) || ($is_product && !$product_id) || !$name || !$email) {
         wp_send_json_error('Fill all required fields');
         return;
     }
@@ -311,12 +313,12 @@ function wcgpq_handle_quote_request()
         return;
     }
 
-    if ($cart_count <= 0 && is_cart()) {
+    if ($cart_count <= 0 && $is_cart) {
         wp_send_json_error("cart is empty can't process");
         return;
     }
 
-    if (!$product_id && is_shop() && is_product()) {
+    if (!$product_id && $is_product) {
         wp_send_json_error("No product id found");
         return;
     }
@@ -332,21 +334,49 @@ function wcgpq_handle_quote_request()
     $cart_items   = array();
     $product_text = "";
 
-    if (is_cart()) {
+    if ($is_cart && !$is_product) {
+
+        $cart_quote_template = get_option('wcgpq_email_template_for_cart_quote', '');
+
+        if (empty($cart_quote_template)) {
+            $cart_quote_template = $config['default_cart_template'];
+        }
+
+        $is_html = ($cart_quote_template !== strip_tags($cart_quote_template));
+
         error_log("is cart page 335 ");
         $cart_items      = wc()->cart->get_cart();
         $cart_items_text = "";
         $total_quantity  = 0;
 
-        foreach ($cart_items as  $cart_item) {
-            $product          = $cart_item['data'];
-            $product_name     = $product->get_name();
-            $product_link     = get_permalink($product->get_id());
-            $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
-            $quantity         = $cart_item['quantity'];
-            $total_quantity  += $quantity;
+        if ($is_html) {
+            error_log('is html line 354');
 
-            $cart_items_text .= "- {$product_name} (Qty: {$quantity})\n  URL: {$product_link}\n Admin Link: {$admin_quote_link}\n\n";
+            $cart_items_text = "<ul>\n";
+
+            foreach (WC()->cart->get_cart() as $cart_item) {
+                $_product     = $cart_item['data'];
+                $item_name    = $_product->get_name();
+                $item_qty     = $cart_item['quantity'];
+                $item_link    = $_product->get_permalink();
+                $item_admin   = admin_url('post.php?post=' . $_product->get_id() . '&action=edit');
+
+                $cart_items_text .= "  <li><strong><a href='" . esc_url($item_link) . "'>" . esc_html($item_name) . "</a></strong> (Qty: " . esc_html($item_qty) . ") - <a href='" . esc_url($item_admin) . "'>Edit</a></li>\n";
+            }
+
+            $cart_items_text .= "</ul>";
+        } else {
+
+            foreach ($cart_items as  $cart_item) {
+                $product          = $cart_item['data'];
+                $product_name     = $product->get_name();
+                $product_link     = get_permalink($product->get_id());
+                $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
+                $quantity         = $cart_item['quantity'];
+                $total_quantity  += $quantity;
+
+                $cart_items_text .= "- {$product_name} (Qty: {$quantity})\n  URL: {$product_link}\n Admin Link: {$admin_quote_link}\n\n";
+            }
         }
 
         $post_data = array(
@@ -356,12 +386,21 @@ function wcgpq_handle_quote_request()
             'post_type'    => 'quote_request',
 
         );
-    } elseif (is_shop() || is_product()) {
+    } elseif ($is_product && !$is_cart) {
+
+
+        $product_quote_template = get_option('wcgpq_email_template_for_product_quote', '');
+
+        if (empty($product_quote_template)) {
+            $product_quote_template = $config['default_product_template'];
+        }
+
+        $is_html = ($product_quote_template !== strip_tags($product_quote_template));
+
         $product      = wc_get_product($product_id);
 
-
         if ($product) {
-            $product_name     = $product->get_name();
+            $product_name     =  $product->get_name();
             $sku              =  $product->get_sku();
             $price            =  $product->get_price();
             $is_in_stock      =  $product->is_in_stock();
@@ -369,12 +408,25 @@ function wcgpq_handle_quote_request()
             $admin_quote_link =  admin_url('post.php?post=' . $product_id . '&action=edit');
 
 
-            $product_text     =  "- {$product_name} (Qty: {$quantity})\n";
-            $product_text    .=  "  URL: {$product_link}\n";
-            $product_text    .=  "  Admin Link: {$admin_quote_link}\n";
-            $product_text    .=  "  Available Stock: {$is_in_stock}\n";
-            $product_text    .=  "  Current Price: {$price}";
-
+            if ($is_html) {
+                error_log('is html line 409');
+                $product_text  = '<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px;">';
+                $product_text .= '  <tr style="background-color: #f2f2f2;"><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Product</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Qty</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Price</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Stock</th><th style="text-align: left; padding: 8px; border: 1px solid #ddd;">Actions</th></tr>';
+                $product_text .= '  <tr>';
+                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;"><a href="' . esc_url($product_link) . '" style="color: #007cba; text-decoration: none; font-weight: bold;">' . esc_html($product_name) . '</a></td>';
+                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($quantity) . '</td>';
+                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($price) . '</td>';
+                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;">' . esc_html($is_in_stock) . '</td>';
+                $product_text .= '    <td style="padding: 8px; border: 1px solid #ddd;"><a href="' . esc_url($admin_quote_link) . '" style="color: #007cba; text-decoration: none;">View in Admin</a></td>';
+                $product_text .= '  </tr>';
+                $product_text .= '</table>';
+            } else {
+                $product_text     =  "- {$product_name} (Qty: {$quantity})\n";
+                $product_text    .=  "  URL: {$product_link}\n";
+                $product_text    .=  "  Admin Link: {$admin_quote_link}\n";
+                $product_text    .=  "  Available Stock: {$is_in_stock}\n";
+                $product_text    .=  "  Current Price: {$price}";
+            }
             $post_data = array(
                 'post_title'   => $name . '-Quote Request',
                 'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $product_text . "\n\n  Customer Message: \n" . $message,
@@ -388,7 +440,7 @@ function wcgpq_handle_quote_request()
 
 
 
-    $email_sent = wcgpq_send_email($cart_items, $product_text,  $name, $email, $phone, $company, $quantity, $message);
+    $email_sent = wcgpq_send_email($cart_items, $product_text,  $name, $email, $phone, $company, $quantity, $message, $is_html);
 
     if ($email_sent) {
         wcgpq_insert_quote_request_post($post_data, $email);
@@ -402,7 +454,7 @@ function wcgpq_handle_quote_request()
 add_action('wp_ajax_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 add_action('wp_ajax_nopriv_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 
-function wcgpq_send_email(array $cart_items, string $product_text, string $name, string $email, string $phone, string $company, string|int $quantity, string $message)
+function wcgpq_send_email(array $cart_items, string $product_text, string $name, string $email, string $phone, string $company, string|int $quantity, string $message, bool $is_html)
 {
 
     $store_name  = get_bloginfo('name');
@@ -416,9 +468,12 @@ function wcgpq_send_email(array $cart_items, string $product_text, string $name,
     error_log('WCGPQ: Subject: ' . $subject);
 
     $email_body = "";
+
     error_log("cart items: " . print_r($cart_items, true));
+
     if (!empty($cart_items)) {
-        error_log("is cart items empty: " . print_r($cart_items));
+
+        error_log("is cart items empty: " . print_r($cart_items, true));
         $cart_quote_template = get_option('wcgpq_email_template_for_cart_quote', '');
 
         if (empty($cart_quote_template)) {
@@ -468,11 +523,19 @@ function wcgpq_send_email(array $cart_items, string $product_text, string $name,
 
 
 
-    $headers = array(
-        'Content-Type: text/plain; charset=UTF-8',
-        'From: ' . $store_name . ' <' . get_option('admin_email') . '>',
-        'Reply-To: ' . $name . ' <' . $email . '>'
-    );
+    if ($is_html) {
+        $headers = array(
+            'Content-Type: text/html; charset=UTF-8',
+            'From: ' . $store_name . ' <' . get_option('admin_email') . '>',
+            'Reply-To: ' . $name . ' <' . $email . '>'
+        );
+    } else {
+        $headers = array(
+            'Content-Type: text/plain; charset=UTF-8',
+            'From: ' . $store_name . ' <' . get_option('admin_email') . '>',
+            'Reply-To: ' . $name . ' <' . $email . '>'
+        );
+    }
 
     $sent = wp_mail($admin_email, $subject, $email_body, $headers);
 
@@ -492,14 +555,14 @@ function wcgpq_send_email(array $cart_items, string $product_text, string $name,
 function wcgpq_configure_smtp(object $phpmailer)
 {
     $phpmailer->isSMTP();
-    $phpmailer->Host  = 'smtp.gmail.com';
-    $phpmailer->SMTPAuth = true;
-    $phpmailer->Port = 587;
-    $phpmailer->Username = get_option('wcgpq_mailer_username'); //'example@gmail.com'
-    $phpmailer->Password = get_option('wcgpq_mailer_password'); //'nqpj jkhw dmzc hnho'
-    $phpmailer->SMTPSecure = 'tls';
-    $phpmailer->From       = get_option('wcgpq_sender_mail'); //'example@gmail.com'
-    $phpmailer->FromName   = get_bloginfo('name');
+    $phpmailer->Host        =  'smtp.gmail.com';
+    $phpmailer->SMTPAuth    =  true;
+    $phpmailer->Port        =  587;
+    $phpmailer->Username    =  get_option('wcgpq_mailer_username'); //'example@gmail.com'
+    $phpmailer->Password    =  get_option('wcgpq_mailer_password'); //'nqpj jkhw dmzc hnho'
+    $phpmailer->SMTPSecure  =  'tls';
+    $phpmailer->From        =  get_option('wcgpq_sender_mail'); //'example@gmail.com'
+    $phpmailer->FromName    =  get_bloginfo('name');
 }
 
 add_action('phpmailer_init', 'wcgpq_configure_smtp');
@@ -508,22 +571,22 @@ function wcgpq_create_quote_request_cpt()
 {
 
     $labels = array(
-        'name' => __('Quote Requests', 'textdomain'),
-        'singular' => __('Quote Request', 'textdomain')
+        'name'     =>  __('Quote Requests', 'textdomain'),
+        'singular' =>  __('Quote Request', 'textdomain')
     );
 
     $args = array(
-        'labels' => $labels,
-        'public' => false,
-        'show_ui' => true,
-        'show_in_menu' => true,
-        'menu_position' => 26,
-        'capability_type' => 'post',
-        'capabilities' => array(
+        'labels'           =>  $labels,
+        'public'           =>  false,
+        'show_ui'          =>  true,
+        'show_in_menu'     =>  true,
+        'menu_position'    =>  26,
+        'capability_type'  =>  'post',
+        'capabilities'     =>  array(
             'create_posts' =>  'do_not_allow',
         ),
-        'map_meta_cap' => true,
-        'supports' => array('title', 'editor', 'custom-fields'),
+        'map_meta_cap'     =>  true,
+        'supports'         =>  array('title', 'editor', 'custom-fields'),
 
     );
 
@@ -585,7 +648,7 @@ function wcgpq_render_meta_boxes($post)
 
 }
 
-function wcgpq_save_meta_box_data($post_id)
+function wcgpq_save_meta_box_data(string $post_id)
 {
     if (!isset($_POST['wcgpq_meta_box_nonce'])) {
         return;
