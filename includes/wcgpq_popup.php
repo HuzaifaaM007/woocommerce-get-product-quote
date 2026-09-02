@@ -24,8 +24,10 @@ function wcgpq_display_popup_form()
                 <form id="wcgpq-form">
                     <?php if (is_cart()): ?>
                         <input type="hidden" name="cart_count" id="wcgpq-cart-count" value="">
+                        <input type="hidden" name="is_cart" id="wcgpq-is-cart" value="1">
                     <?php elseif (is_shop() || is_product()) : ?>
                         <input type="hidden" name="product_id" id="wcgpq-product-id" value="">
+                        <input type="hidden" name="is_product" id="wcgpq-is-product" value="1">
                     <?php endif; ?>
                     <p>
                         <label for="wcgpq-name">Name <span style="color:red;">*</span></label><br>
@@ -55,8 +57,10 @@ function wcgpq_display_popup_form()
                 <form id="wcgpq-form">
                     <?php if (is_cart()): ?>
                         <input type="hidden" name="cart_count" id="wcgpq-cart-count" value="">
+                        <input type="hidden" name="is_cart" id="wcgpq-is-cart" value="1">
                     <?php elseif (is_shop() || is_product()) : ?>
                         <input type="hidden" name="product_id" id="wcgpq-product-id" value="">
+                        <input type="hidden" name="is_product" id="wcgpq-is-product" value="1">
                     <?php endif; ?>
 
                     <p>
