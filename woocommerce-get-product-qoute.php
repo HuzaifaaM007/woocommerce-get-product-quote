@@ -54,6 +54,21 @@ function wcgpq_add_action_links(array $links)
 
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'wcgpq_add_action_links');
 
+function wcgpq_form_updater()
+{
+    $wcgpq_forms = get_option('wcgpq_forms');
+
+    error_log('default forms added 1');
+
+    if (!$wcgpq_forms) {
+        $default_forms = wcgpq_get_default_forms();
+        update_option('wcgpq_forms', $default_forms);
+        error_log('default forms added', print_r(get_option('wcgpq_forms'), true));
+    }
+}
+
+add_action('plugins_loaded', 'wcgpq_form_updater');
+
 function wcgpq_get_quote_button()
 {
 
@@ -294,14 +309,60 @@ function wcgpq_handle_quote_request()
         $product_id = isset($_POST['product_id']) ? intval($_POST['product_id']) : 0;
     }
     // Sanitize and validate form data
-    $name       =  isset($_POST['name'])       ?  sanitize_text_field($_POST['name'])        : '';
-    $email      =  isset($_POST['email'])      ?  sanitize_email($_POST['email'])            : '';
-    $phone      =  isset($_POST['phone'])      ?  sanitize_text_field($_POST['phone'])       : '';
-    $company    =  isset($_POST['company'])    ?  sanitize_text_field($_POST['company'])     : '';
+    // $name       =  isset($_POST['name'])       ?  sanitize_text_field($_POST['name'])        : '';
+    // $email      =  isset($_POST['email'])      ?  sanitize_email($_POST['email'])            : '';
+    // $phone      =  isset($_POST['phone'])      ?  sanitize_text_field($_POST['phone'])       : '';
+    // $company    =  isset($_POST['company'])    ?  sanitize_text_field($_POST['company'])     : '';
+    // $quantity   =  isset($_POST['quantity'])   ?  intval($_POST['quantity'])                 :  1;
+    // $message    =  isset($_POST['message'])    ?  sanitize_textarea_field($_POST['message']) : '';
+    // $is_cart    =  isset($_POST['is_cart'])    ?  1 : 0;
+    // $is_product =  isset($_POST['is_product']) ?  1 : 0;
+
+    $wcgpq_selected_form = get_option('wcgpq_form_type');
+    $wcgpq_forms = get_option('wcgpq_forms');
+    $form_defination = $wcgpq_forms[$wcgpq_selected_form] ?? null;
+    if (!isset($form_defination)) {
+        wp_send_json_error('no form selected contact admin !');
+    }
+
+    $name = '';
+    $email = '';
+    $dynamic_fields = array();
+
+
+    if ($form_defination) {
+        foreach ($form_defination['fields'] as $field) {
+            $field_id = $field['id'];
+
+            if (!isset($_POST[$field_id])) {
+                continue;
+            }
+
+            $raw_value = wp_unslash($_POST[$field_id]);
+
+            switch ($field['type']) {
+                case 'email':
+                    $value = sanitize_email($raw_value);
+                    $email = $value;
+                    break;
+                case 'textarea':
+                    $value = sanitize_textarea_field($raw_value);
+                    break;
+                default:
+                    $value = sanitize_text_field($raw_value);
+            }
+
+            if (empty($name) && $field['type'] === 'text' && strpos($field_id, 'name') !== false) {
+                $name = $value;
+            }
+
+            $dynamic_fields[$field['label']] = $value;
+        }
+    }
+
+
     $quantity   =  isset($_POST['quantity'])   ?  intval($_POST['quantity'])                 :  1;
-    $message    =  isset($_POST['message'])    ?  sanitize_textarea_field($_POST['message']) : '';
-    $is_cart    =  isset($_POST['is_cart'])    ?  1 : 0;
-    $is_product =  isset($_POST['is_product']) ?  1 : 0;
+
 
     if (($is_cart && !$cart_count) || ($is_product && !$product_id) || !$name || !$email) {
         wp_send_json_error('Fill all required fields');
@@ -330,9 +391,14 @@ function wcgpq_handle_quote_request()
     //     return;
     // }
 
-    $post_data    = array();
-    $cart_items   = array();
-    $product_text = "";
+    $post_data              =  array();
+    $cart_items             =  array();
+    $product_text           =  "";
+    $submitted_fields_text  =  "Submitted Form Fields:\n\n";
+
+    foreach ($dynamic_fields as $label => $value) {
+        $submitted_fields_text .= "{$label}: {$value}\n";
+    }
 
     if ($is_cart && !$is_product) {
 
@@ -348,6 +414,7 @@ function wcgpq_handle_quote_request()
         $cart_items      = wc()->cart->get_cart();
         $cart_items_text = "";
         $total_quantity  = 0;
+
 
         if ($is_html) {
             error_log('is html line 354');
@@ -381,7 +448,7 @@ function wcgpq_handle_quote_request()
 
         $post_data = array(
             'post_title'   => $name . '-Quote Request',
-            'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $cart_items_text . "\n\n  Customer Message: \n" . $message,
+            'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $cart_items_text . "\n\n  Customer Message: \n" . $submitted_fields_text,
             'post_status'  => 'publish',
             'post_type'    => 'quote_request',
 
@@ -429,7 +496,7 @@ function wcgpq_handle_quote_request()
             }
             $post_data = array(
                 'post_title'   => $name . '-Quote Request',
-                'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $product_text . "\n\n  Customer Message: \n" . $message,
+                'post_content' =>  "Customer Email: " . $email . "\n\n  Cart_data:\n " . $product_text . "\n\n  Customer Message: \n" . $submitted_fields_text,
                 'post_status'  => 'publish',
                 'post_type'    => 'quote_request',
 
