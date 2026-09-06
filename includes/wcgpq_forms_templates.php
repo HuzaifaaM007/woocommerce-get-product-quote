@@ -1,7 +1,7 @@
 <?php
 
 
-function wcgpq_get_all_forms()
+function wcgpq_get_default_forms()
 {
 
     return array(
@@ -11,24 +11,37 @@ function wcgpq_get_all_forms()
             'name'   =>  'Basic Contact Form',
             'fields' =>  array(
                 array(
-                    'id'    =>  'form_a_user_name',
+                    'id'    =>  'user_name',
                     'label' =>  'Your Name',
-                    'type'  =>  'text'
+                    'type'  =>  'text',
+                    'required' => true,
+                    'placeholder' => 'name',
+                    'always_on' => true,
                 ),
                 array(
                     'id'    =>  'form_a_email',
                     'label' =>  'Email Address',
-                    'type'  =>  'email'
+                    'type'  =>  'email',
+                    'required' => true,
+                    'placeholder' => 'email',
+                    'always_on' => true,
                 ),
                 array(
                     'id'    =>  'form_a_phone_number',
                     'label' =>  'Phone No',
-                    'type'  =>  'text'
+                    'type'  =>  'text',
+                    'required' => true,
+                    'placeholder' => 'phone number',
+                    'always_on' => true,
+
                 ),
                 array(
                     'id'    =>  'form_a_message',
                     'label' =>  'Message',
-                    'type'  =>  'textarea'
+                    'type'  =>  'textarea',
+                    'required' => true,
+                    'placeholder' => 'message',
+                    'always_on' => true,
                 )
             )
         ),
@@ -38,27 +51,41 @@ function wcgpq_get_all_forms()
                 array(
                     'id'    =>  'fullname',
                     'label' =>  'Full Name',
-                    'type'  =>  'text'
+                    'type'  =>  'text',
+                    'required' => true,
+                    'placeholder' => 'fullname',
+                    'always_on' => true,
                 ),
                 array(
                     'id'    =>  'company',
                     'label' =>  'Company Name',
-                    'type'  =>  'text'
+                    'type'  =>  'text',
+                    'placeholder' => 'company',
+                    'always_on' => true,
                 ),
                 array(
                     'id'    =>  'email',
                     'label' =>  'Business Email',
-                    'type'  =>  'email'
+                    'type'  =>  'email',
+                    'required' => true,
+                    'placeholder' => 'bussiness Email',
+                    'always_on' => true,
                 ),
                 array(
                     'id'    =>  'quantity',
                     'label' =>  'Quantity Needed',
-                    'type'  =>  'number'
+                    'type'  =>  'number',
+                    'required' => true,
+                    'placeholder' => '500',
+                    'always_on' => true,
                 ),
                 array(
                     'id'    =>  'form_b_message',
                     'label' =>  'Message',
-                    'type'  =>  'textarea'
+                    'type'  =>  'textarea',
+                    'required' => true,
+                    'placeholder' => 'message',
+                    'always_on' => true,
                 ),
 
             )
@@ -70,7 +97,7 @@ function wcgpq_get_all_forms()
 // get form Choices
 function wcgpq_get_form_choices()
 {
-    $forms   = wcgpq_get_all_forms();
+    $forms   = wcgpq_get_default_forms();
     $choices = array();
 
     foreach ($forms as $id => $form) {
@@ -83,7 +110,7 @@ function wcgpq_get_form_choices()
 // Generate html preview of selected form
 function wcgpq_generate_form_preview($form_id)
 {
-    $forms = wcgpq_get_all_forms();
+    $forms = wcgpq_get_default_forms();
 
     if (!isset($forms[$form_id])) {
         return "<p>Form not found </p>";
