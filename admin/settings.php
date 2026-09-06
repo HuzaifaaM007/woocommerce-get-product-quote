@@ -14,16 +14,18 @@ require_once plugin_dir_path(__FILE__) . '../includes/wcgpq_forms_templates.php'
 
 
 add_action('woocommerce_admin_field_wcgpq_preview', 'wcgpq_render_preview_fields', 10);
-error_log("=== HOOK REGISTERED: woocommerce_admin_field_wcgpq_preview ===");
+// error_log("=== HOOK REGISTERED: woocommerce_admin_field_wcgpq_preview ===");
 
 function wcgpq_render_preview_fields($value)
 {
     error_log("value received " . print_r($value, true));
 
     $form_id = isset($value['form_id']) ? $value['form_id'] : 'form_a';
+    $current_selection = get_option('wcgpq_form_type', 'form_a');
+    $style = ($form_id !== $current_selection) ? 'style="display:none;"' : '';
     error_log('form_id : ' . $form_id);
 ?>
-    <tr valign="top">
+    <tr valign="top" <?php echo $style; ?> class="wcgpq-preview-row">
         <th scope="row" class="titledesc"></th>
         <td class="forminp">
             <?php echo wcgpq_generate_form_preview($form_id) ?>
@@ -88,7 +90,7 @@ function wcgpq_admin_settings()
     );
 
     $wcgpq_settings_array[] = array(
-        'title'             =>  'sectionend',
+        'type'             =>  'sectionend',
         'id'                =>  'wcgpq_form_section_end'
     );
 
@@ -102,6 +104,7 @@ function wcgpq_admin_settings()
 
     $wcgpq_settings_array[] = array(
         'title'             =>  'wcgpq_preview',
+        'type'              =>  'wcgpq_preview',
         'id'                =>  'wcgpq_preview',
         'form_id'           =>  'form_a'
 
@@ -109,6 +112,7 @@ function wcgpq_admin_settings()
 
     $wcgpq_settings_array[] = array(
         'title'             =>  'wcgpq_preview',
+        'type'              =>  'wcgpq_preview',
         'id'                =>  'wcgpq_preview',
         'form_id'           =>  'form_b'
     );
