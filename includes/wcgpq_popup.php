@@ -1,6 +1,7 @@
 <?php
 
 require_once plugin_dir_path(__FILE__) . './wcgpq_forms_templates.php';
+require_once plugin_dir_path(__FILE__) . '../admin/wcgpq-form-builder.php';
 
 
 if (!defined('ABSPATH')) {
@@ -20,7 +21,7 @@ function wcgpq_display_popup_form()
         <div id="wcgpq-popup-box">
             <span id="wcgpq-close-popup">&times;</span>
             <h2>Request a Quote</h2>
-            <?php if ($wcgpq_selected_form === 'form_a'): ?>
+            <?php if ($wcgpq_selected_form): ?>
                 <form id="wcgpq-form">
                     <?php if (is_cart()): ?>
                         <input type="hidden" name="cart_count" id="wcgpq-cart-count" value="">
@@ -29,26 +30,7 @@ function wcgpq_display_popup_form()
                         <input type="hidden" name="product_id" id="wcgpq-product-id" value="">
                         <input type="hidden" name="is_product" id="wcgpq-is-product" value="1">
                     <?php endif; ?>
-                    <p>
-                        <label for="wcgpq-name">Name <span style="color:red;">*</span></label><br>
-                        <input type="text" name="name" id="wcgpq-name" required>
-                    </p>
-
-                    <p>
-                        <label for="wcgpq-email">Email <span style="color:red;">*</span></label><br>
-                        <input type="email" name="email" id="wcgpq-email" required>
-                    </p>
-
-                    <!-- <p>
-                    <label for="wcgpq-quantity">Quantity</label><br>
-                    <input type="number" name="quantity" id="wcgpq-quantity" value="1" min="1">
-                </p> -->
-
-                    <p>
-                        <label for="wcgpq-message">Message</label><br>
-                        <textarea name="message" id="wcgpq-message" rows="4"></textarea>
-                    </p>
-
+                    <?php echo wcgpq_render_forms($wcgpq_selected_form) ?>
                     <p>
                         <button type="submit" class="button" id="wcgpq-submit-btn">Request Quote</button>
                     </p>
