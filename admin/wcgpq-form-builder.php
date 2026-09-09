@@ -67,6 +67,7 @@ function wcgpq_render_fields(array $field): string
     $is_required = ! empty($field['required']) ?  'required' : '';
     $req_mark    = ! empty($field['required']) ?  ' <span class="required">*</span>' : '';
     $default     =  '';
+    $options     =  $field['options']         ?? array();
 
     $raw_value   =  isset($_POST[$id]) ? wp_unslash($_POST[$id]) : $default;
 
@@ -104,16 +105,15 @@ function wcgpq_render_fields(array $field): string
 
             // --- Select Dropdown ---
         case 'select':
-            $options = (array) ($field['options'] ?? array());
             $output .= sprintf('<select id="%s" name="%s" %s class="regular-text">', $id, $id, $is_required);
 
             if (isset($field['placeholder'])) {
                 $output .= '<option value="">' . esc_html($field['placeholder']) . '</option>';
             }
 
-            foreach ($options as $val => $opt_label) {
+            foreach ($options as $val) {
                 $selected = selected($raw_value, $val, false);
-                $output  .= sprintf('<option value="%s" %s>%s</option>', esc_attr($val), $selected, esc_html($opt_label));
+                $output  .= sprintf('<option value="%s" %s>%s</option>', esc_attr($val), $selected, esc_html($val));
             }
 
             $output .= '</select>';
@@ -122,21 +122,38 @@ function wcgpq_render_fields(array $field): string
             // --- Single Checkbox ---
         case 'checkbox':
             $checked = checked(! empty($raw_value), true, false);
-            $output .= sprintf(
-                '<label><input type="checkbox" id="%s" name="%s" value="1" %s %s /> %s%s</label>',
-                $id,
-                $id,
-                $checked,
-                $is_required,
-                $label,
-                $req_mark
-            );
+            if (count($options) > 1) {
+                foreach ($options as $option) {
+                    $opt_val = esc_attr($option);
+                    $output .= sprintf(
+                        '<label><input type="checkbox" id="%s" name="%s" value="%s" %s %s /> %s%s</label>',
+                        $id,
+                        $id,
+                        $opt_val,
+                        $checked,
+                        $is_required,
+                        $label,
+                        $req_mark
+                    );
+                }
+            } else {
+
+                $output .= sprintf(
+                    '<label><input type="checkbox" id="%s" name="%s" value="1" %s %s /> %s%s</label>',
+                    $id,
+                    $id,
+                    $checked,
+                    $is_required,
+                    $label,
+                    $req_mark
+                );
+            }
             return $output;
 
             // --- Radio Buttons ---
         case 'radio':
             $options = (array) ($field['options'] ?? array());
-            foreach ($options as $val => $opt_label) {
+            foreach ($options as $val) {
                 $checked = checked($raw_value, $val, false);
                 $opt_id  = $id . '_' . sanitize_key($val);
                 $output .= sprintf(
@@ -146,7 +163,7 @@ function wcgpq_render_fields(array $field): string
                     esc_attr($val),
                     $checked,
                     $is_required,
-                    esc_html($opt_label)
+                    esc_html($val)
                 );
             }
             return $output;
@@ -226,7 +243,7 @@ function wcgpq_save_form_handler()
         if (empty($field['id']) || empty($field['label'])) {
             continue;
         }
-        $clean_fields[] = array(
+        $clean_field = array(
             'id'          => sanitize_key($field['id']),
             'label'       => sanitize_text_field($field['label']),
             'type'        => in_array($field['type'], array('text', 'email', 'textarea', 'number', 'checkbox', 'range', 'tel', 'color', 'file', 'radio', 'url', 'password', 'date'), true) ? $field['type'] : 'text',
@@ -234,12 +251,23 @@ function wcgpq_save_form_handler()
             'placeholder' => sanitize_text_field($field['placeholder']),
             'always_on'   => true,
         );
+
+        if (isset($field['options']) && !empty($field['options'])) {
+            $options_array           =  array_map('trim', explode(',', $field['options']));
+            $clean_field['options'] =  array_map('sanitize_text_field', $options_array);
+            // error_log(print_r($options_array, true));
+        } else {
+            $clean_field['options'] =  array();
+        }
+
+        $clean_fields[] = $clean_field;
     }
 
-    $forms[$form_id] = array(
-        'name'   => $name,
-        'fields' => $clean_fields,
+    $forms[$form_id] =   array(
+        'name'       =>  $name,
+        'fields'     =>  $clean_fields,
     );
+
     error_log('saving the form line 501');
 
     update_option('wcgpq_forms', $forms);
