@@ -17,7 +17,7 @@ require_once plugin_dir_path(__FILE__) . '../admin/wcgpq-form-builder.php';
 add_action('woocommerce_admin_field_wcgpq_preview', 'wcgpq_render_preview_fields', 10);
 // error_log("=== HOOK REGISTERED: woocommerce_admin_field_wcgpq_preview ===");
 
-function wcgpq_render_preview_fields($value)
+function wcgpq_render_preview_fields(array $value)
 {
     error_log("value received " . print_r($value, true));
 
@@ -103,21 +103,6 @@ function wcgpq_admin_settings()
         'id'                =>  'wcgpq_form_preview_header',
         'desc_tip'          =>  true
     );
-
-    // $wcgpq_settings_array[] = array(
-    //     'title'             =>  'wcgpq_preview',
-    //     'type'              =>  'wcgpq_preview',
-    //     'id'                =>  'wcgpq_preview',
-    //     'form_id'           =>  'form_a'
-
-    // );
-
-    // $wcgpq_settings_array[] = array(
-    //     'title'             =>  'wcgpq_preview',
-    //     'type'              =>  'wcgpq_preview',
-    //     'id'                =>  'wcgpq_preview',
-    //     'form_id'           =>  'form_b'
-    // );
 
     $forms = get_option('wcgpq_forms', wcgpq_get_default_forms());
 
@@ -219,9 +204,9 @@ function wcgpq_admin_settings()
 
 function wcpgpq_render_forms_admin_page()
 {
-    $forms = get_option('wcgpq_forms', array());
-    $editing = isset($_GET['edit']) ? sanitize_text_field($_GET['edit']) : null;
-    $form_data = ($editing && isset($forms[$editing])) ? $forms[$editing] : null;
+    $forms     =  get_option('wcgpq_forms', array());
+    $editing   =  isset($_GET['edit'])                  ? sanitize_text_field($_GET['edit']) : null;
+    $form_data =  ($editing && isset($forms[$editing])) ? $forms[$editing]                   : null;
 
 ?>
     <div class="wrap">
@@ -262,9 +247,9 @@ function wcpgpq_render_forms_admin_page()
 
 function wcgpq_render_form_editor(string $form_id, array $form_data)
 {
-    $is_new = ($form_id === 'new');
-    $form_name = $form_data ? $form_data['name'] : '';
-    $fields = $form_data ? $form_data['fields'] : array();
+    $is_new    =  ($form_id === 'new');
+    $form_name =  $form_data ? $form_data['name']   : '';
+    $fields    =  $form_data ? $form_data['fields'] : array();
 
 ?>
     <div id="wcgpq-form-editor-wrap">
@@ -293,6 +278,7 @@ function wcgpq_render_form_editor(string $form_id, array $form_data)
                     <th>Type</th>
                     <th>Required</th>
                     <th>Placeholder</th>
+                    <th>Options</th>
                     <th></th>
                 </tr>
             </thead>
@@ -358,6 +344,7 @@ function wcgpq_render_form_editor(string $form_id, array $form_data)
                         data.append('fields[' + i + '][required]', '1');
                     }
                     data.append('fields[' + i + '][placeholder]', row.querySelector('[name$="[placeholder]"]').value);
+                    data.append('fields[' + i + '][options]', row.querySelector('[name$="[options]"]').value);
                 });
 
                 fetch('<?php echo esc_url_raw(admin_url('admin-post.php')); ?>', {
@@ -375,18 +362,76 @@ function wcgpq_render_form_editor(string $form_id, array $form_data)
                     console.error(err);
                 });
             });
+
+            document.addEventListener('change', function(e) {
+                // Check if the changed element is a field type select dropdown
+                if (e.target && e.target.matches('select[name$="[type]"]')) {
+                    const select =  e.target;
+                    const row    =  select.closest('tr');
+                    if (!row) return;
+
+                    const selectedType =  select.value;
+                    const optionsCell  =  row.querySelector('.wcgpq-options-cell');
+
+                    if (!optionsCell) return;
+
+                    // Field types that require options
+                    const typesWithOptions = ['radio', 'select', 'checkbox'];
+
+                    if (typesWithOptions.includes(selectedType)) {
+                        // Get existing value if restoring from disabled state
+                        const currentInput =  optionsCell.querySelector('input');
+                        const previousVal  =  currentInput ? currentInput.dataset.previousValue || '' : '';
+
+                        optionsCell.innerHTML = `
+                <input type="text" 
+                       name="fields[${getRowIndex(row)}][options]" 
+                       value="${previousVal}" 
+                       placeholder="Comma-separated values">
+            `;
+                    } else {
+                        // Store value temporarily in dataset before disabling, in case user switches back
+                        const currentInput =  optionsCell.querySelector('input');
+                        const savedValue   =  currentInput ? currentInput.value : '';
+
+                        optionsCell.innerHTML = `
+                <input type="text" 
+                       disabled 
+                       value="disabled" 
+                       data-previous-value="${savedValue}">
+            `;
+                    }
+                }
+            });
+
+            // Helper function to extract row index from existing input names
+            function getRowIndex(row) {
+                const input = row.querySelector('[name^="fields["]');
+                if (input) {
+                    const  match =  input.name.match(/fields\[(\d+)\]/);
+                    return match ?  match[1] : 0;
+                }
+                return 0;
+            }
         })();
     </script>
 <?php
 }
 
-function wcgpq_render_field_row($index, $field)
+function wcgpq_render_field_row(int|string $index,array $field)
 {
-    $id          = isset($field['id']) ? $field['id'] : '';
-    $label       = isset($field['label']) ? $field['label'] : '';
-    $type        = isset($field['type']) ? $field['type'] : 'text';
+    $id          =  isset($field['id'])          ? $field['id']          : '';
+    $label       =  isset($field['label'])       ? $field['label']       : '';
+    $type        =  isset($field['type'])        ? $field['type']        : 'text';
     $required    = !empty($field['required']);
-    $placeholder = isset($field['placeholder']) ? $field['placeholder'] : '';
+    $placeholder =  isset($field['placeholder']) ? $field['placeholder'] : '';
+    $options     =  isset($field['options'])     ? $field['options']     : array();
+
+    error_log('printing the options for radio :' . print_r($options, true));
+    if (isset($options)) {
+        $options_val = is_array($options) ? implode(', ', $options) : $options;
+        error_log('printing the option vlaue in string form : ' . $options_val);
+    }
     ob_start();
 ?>
     <tr>
@@ -394,26 +439,36 @@ function wcgpq_render_field_row($index, $field)
         <td><input type="text" name="fields[<?php echo $index; ?>][label]" value="<?php echo esc_attr($label); ?>" required></td>
         <td>
             <select name="fields[<?php echo $index; ?>][type]">
-                <option value="text"     <?php selected($type, 'text');     ?>>Text     </option>
-                <option value="email"    <?php selected($type, 'email');    ?>>Email    </option>
-                <option value="textarea" <?php selected($type, 'textarea'); ?>>Textarea </option>
-                <option value="number"   <?php selected($type, 'number');   ?>>Number   </option>
-                <option value="checkbox" <?php selected($type, 'checkbox'); ?>>Checkbox </option>
-                <option value="radio"    <?php selected($type, 'radio');    ?>>Radio    </option>
-                <option value="file"     <?php selected($type, 'file');     ?>>File     </option>
-                <option value="range"    <?php selected($type, 'range');    ?>>Range    </option>
-                <option value="tel"      <?php selected($type, 'tel');      ?>>Tel      </option>
-                <option value="number"   <?php selected($type, 'number');   ?>>Number   </option>
-                <option value="url"      <?php selected($type, 'url');      ?>>Url      </option>
-                <option value="password" <?php selected($type, 'password'); ?>>Password </option>
-                <option value="date"     <?php selected($type, 'date');     ?>>Date     </option>
-                <option value="time"     <?php selected($type, 'time');     ?>>Time     </option>
-                <option value="color"    <?php selected($type, 'color');    ?>>Color    </option>
+                <option value="text" <?php selected($type, 'text');              ?>>Text</option>
+                <option value="email" <?php selected($type, 'email');           ?>>Email</option>
+                <option value="textarea" <?php selected($type, 'textarea');  ?>>Textarea</option>
+                <option value="number" <?php selected($type, 'number');        ?>>Number</option>
+                <option value="checkbox" <?php selected($type, 'checkbox');  ?>>Checkbox</option>
+                <option value="radio" <?php selected($type, 'radio');           ?>>Radio</option>
+                <option value="file" <?php selected($type, 'file');              ?>>File</option>
+                <option value="range" <?php selected($type, 'range');           ?>>Range</option>
+                <option value="tel" <?php selected($type, 'tel');                 ?>>Tel</option>
+                <option value="url" <?php selected($type, 'url');                 ?>>Url</option>
+                <option value="password" <?php selected($type, 'password');  ?>>Password</option>
+                <option value="date" <?php selected($type, 'date');              ?>>Date</option>
+                <option value="time" <?php selected($type, 'time');              ?>>Time</option>
+                <option value="color" <?php selected($type, 'color');           ?>>Color</option>
 
             </select>
         </td>
+
         <td><input type="checkbox" name="fields[<?php echo $index; ?>][required]" value="1" <?php checked($required); ?>></td>
         <td><input type="text" name="fields[<?php echo $index; ?>][placeholder]" value="<?php echo esc_attr($placeholder); ?>"></td>
+        <td class="wcgpq-options-cell">
+            <?php if ($type === 'radio' || $type === 'select' || $type === 'checkbox'): ?>
+                <input type="text"
+                    name="fields[<?php echo $index; ?>][options]"
+                    value="<?php echo esc_attr($options_val); ?>"
+                    placeholder="Comma-separated values">
+            <?php else: ?>
+                <input type="text" disabled value="disabled">
+            <?php endif; ?>
+        </td>
         <td><button type="button" class="button wcgpq-remove-field">Remove</button></td>
     </tr>
 <?php
