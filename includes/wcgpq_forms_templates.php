@@ -134,11 +134,43 @@ function wcgpq_generate_form_preview(string $form_id)
             $html .= '<p>';
             $html .= '<label>' . esc_html($label) . '</label><br>';
 
-            // Fix for textarea vs standard HTML inputs
-            if ($type === 'textarea') {
-                $html .= '<textarea placeholder="' . esc_attr($placeholder) . '" disabled></textarea>';
-            } else {
-                $html .= '<input type="' . esc_attr($type) . '" placeholder="' . esc_attr($placeholder) . '" disabled>';
+            switch ($type) {
+                case 'textarea':
+                    $html .= '<textarea placeholder="' . esc_attr($placeholder) . '" disabled class="regular-text" rows="4"></textarea>';
+                    break;
+
+                case 'checkbox':
+                    $html .= '<label><input type="checkbox" disabled /> ' . esc_html($placeholder ? $placeholder : 'Checkbox Option') . '</label>';
+                    break;
+
+                case 'radio':
+                    $html .= '<label style="margin-right: 10px;"><input type="radio" disabled checked /> ' . esc_html($placeholder ? $placeholder : 'Radio Option 1') . '</label>';
+                    $html .= '<label><input type="radio" disabled /> Option 2</label>';
+                    break;
+
+                case 'file':
+                    $html .= '<input type="file" disabled />';
+                    break;
+
+                case 'range':
+                    $html .= '<input type="range" disabled />';
+                    break;
+
+                case 'color':
+                    $html .= '<input type="color" value="#2271b1" disabled />';
+                    break;
+
+                case 'date':
+                case 'time':
+                case 'number':
+                case 'tel':
+                case 'url':
+                case 'password':
+                case 'email':
+                case 'text':
+                default:
+                    $html .= '<input type="' . esc_attr($type) . '" placeholder="' . esc_attr($placeholder) . '" disabled class="regular-text" />';
+                    break;
             }
 
             $html .= '</p>';
