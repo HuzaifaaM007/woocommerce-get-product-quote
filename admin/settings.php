@@ -394,10 +394,22 @@ function wcgpq_render_field_row($index, $field)
         <td><input type="text" name="fields[<?php echo $index; ?>][label]" value="<?php echo esc_attr($label); ?>" required></td>
         <td>
             <select name="fields[<?php echo $index; ?>][type]">
-                <option value="text" <?php selected($type, 'text'); ?>>Text</option>
-                <option value="email" <?php selected($type, 'email'); ?>>Email</option>
-                <option value="textarea" <?php selected($type, 'textarea'); ?>>Textarea</option>
-                <option value="number" <?php selected($type, 'number'); ?>>Number</option>
+                <option value="text"     <?php selected($type, 'text');     ?>>Text     </option>
+                <option value="email"    <?php selected($type, 'email');    ?>>Email    </option>
+                <option value="textarea" <?php selected($type, 'textarea'); ?>>Textarea </option>
+                <option value="number"   <?php selected($type, 'number');   ?>>Number   </option>
+                <option value="checkbox" <?php selected($type, 'checkbox'); ?>>Checkbox </option>
+                <option value="radio"    <?php selected($type, 'radio');    ?>>Radio    </option>
+                <option value="file"     <?php selected($type, 'file');     ?>>File     </option>
+                <option value="range"    <?php selected($type, 'range');    ?>>Range    </option>
+                <option value="tel"      <?php selected($type, 'tel');      ?>>Tel      </option>
+                <option value="number"   <?php selected($type, 'number');   ?>>Number   </option>
+                <option value="url"      <?php selected($type, 'url');      ?>>Url      </option>
+                <option value="password" <?php selected($type, 'password'); ?>>Password </option>
+                <option value="date"     <?php selected($type, 'date');     ?>>Date     </option>
+                <option value="time"     <?php selected($type, 'time');     ?>>Time     </option>
+                <option value="color"    <?php selected($type, 'color');    ?>>Color    </option>
+
             </select>
         </td>
         <td><input type="checkbox" name="fields[<?php echo $index; ?>][required]" value="1" <?php checked($required); ?>></td>
@@ -445,7 +457,7 @@ add_filter('woocommerce_settings_tabs_array', 'wcgpq_add_settings_tab', 50);
 function wcgpq_settings_tab_content()
 {
 ?>
-    <div class="wcgpq-settings-header" style="background:#fff; padding: 15px; border:1px solid #ccc; border-left:4px solid #25D366; margin: bottom 20px;">
+    <div class="wcgpq-settings-header" style="background:#fff; padding: 15px; border:1px solid #ccc; border-left:4px solid #25D366; margin: bottom 20px; margin-bottom:20px;">
         <h2 style="margin:0 0 5px 0; "><?php _e('Get Product Quote', 'wcgpq'); ?></h2>
         <p style="margin:0;"><?php _e('Need assistance? Check out our <a href="#" target="_blank">Documentation</a> or submit a <a href="#" target="_blank">Support Ticket</a>.', 'wcgpq'); ?></p>
     </div>
