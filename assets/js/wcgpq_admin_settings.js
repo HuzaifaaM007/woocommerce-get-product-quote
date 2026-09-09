@@ -2,136 +2,66 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log("WCGPQ Admin settings loaded");
 
-    // Password toggle feature
-    const password_field = document.getElementById('wcgpq_mailer_password');
-    if (password_field) {
-        const toggle_button = document.createElement('button');
-        toggle_button.type = 'button';
-        toggle_button.textContent = 'Show';
-        toggle_button.className = 'button';
-        toggle_button.style.marginLeft = '5px';
+    // -------------------------------------------------------------
+    // 1. Password Visibility Toggle
+    // -------------------------------------------------------------
+    const passwordField = document.getElementById('wcgpq_mailer_password');
 
-        password_field.insertAdjacentElement('afterend', toggle_button);
+    if (passwordField) {
+        const toggleButton = document.createElement('button');
+        toggleButton.type = 'button';
+        toggleButton.textContent = 'Show';
+        toggleButton.className = 'button';
+        toggleButton.style.marginLeft = '5px';
 
-        toggle_button.addEventListener('click', function () {
-            if (password_field.type === 'password') {
-                password_field.type = 'text';
-                toggle_button.textContent = 'Hide';
-            } else {
-                password_field.type = 'password';
-                toggle_button.textContent = 'Show';
-            }
+        passwordField.insertAdjacentElement('afterend', toggleButton);
+
+        toggleButton.addEventListener('click', function () {
+            const isPassword = passwordField.type === 'password';
+            passwordField.type = isPassword ? 'text' : 'password';
+            toggleButton.textContent = isPassword ? 'Hide' : 'Show';
         });
     }
 
-    // Form preview toggle
-    const form_select = document.getElementById('wcgpq_form_type');
-    const previews = document.querySelectorAll('.wcgpq-form-preview');
+    // -------------------------------------------------------------
+    // 2. Form Preview Dynamic Toggle
+    // -------------------------------------------------------------
+    const formSelect = document.getElementById('wcgpq_form_type');
 
-
-    if (!form_select || previews.length === 0) {
-
-        console.log("Form select not found or no previews available");
-        console.log(previews.length);
-        console.log(form_select);
-        
-        
+    if (!formSelect) {
+        console.warn("WCGPQ: Select dropdown (#wcgpq_form_type) not found in DOM.");
         return;
     }
 
-    console.log("Found", previews.length, "previews");
-
-    function toggle_forms() {
-
-        const selected = form_select.value;
-        console.log('Selected form:', selected);
-
+    function toggleForms() {
+        const selected = formSelect.value;
         const previews = document.querySelectorAll('.wcgpq-form-preview');
-        console.log("Inside toggle_forms");
-        console.log("previews length:", previews.length);
-        console.log("previews:", previews);
 
-        // Hide all previews
+        if (previews.length === 0) {
+            console.warn("WCGPQ: No form previews (.wcgpq-form-preview) found on page.");
+            return;
+        }
+
+        // Hide all previews (checks for <tr> first, then parent container, then self)
         previews.forEach(preview => {
-            console.log("preview log", preview);
-
-            // const parent_div = preview.parentElement;
-
-            // removing as now  using tr 
-            // if (parent_div) {
-            //     parent_div.style.display = 'none';
-            //     console.log('<<<<<<<<<<<<< parent div hidden >>>>>>>');
-
-            // }
-            // else{
-            //     preview.style.display = 'none';
-            //     console.log('<<<<<<<<<<<<< preview div hidden >>>>>>>');
-
-            // }
-
-            const row = preview.closest('tr');
-            console.log(preview.closest('tr'));
-
-
-            console.log('<<<<<<<<<<' + row + ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-
-            if (row) {
-                console.log('debug ' + row);
-                console.log('debug >>> ' + selected);
-
-
-                row.style.display = 'none';
-            }
-            else {
-                console.log(' No tr found');
-                const parent_element = preview.parentElement;
-
-                if (parent_element) {
-                    parent_element.style.display = 'none';
-                }
-
-            }
+            const targetElement = preview.closest('tr') || preview.parentElement || preview;
+            targetElement.style.display = 'none';
         });
 
-        // Show selected preview
-        const activepreview = document.querySelector('.wcgpq-preview-' + selected);
+        // Show the selected form preview
+        const activePreview = document.querySelector('.wcgpq-preview-' + selected);
 
-        console.log('Active preview element:', activepreview);
-
-        if (activepreview) {
-
-            // removed as now using tr tag
-            // const parent_div = activepreview.parentElement;
-            // if (parent_div) {
-            //     parent_div.style.display = '';
-            //     console.log('Showed parent div');
-
-            // }
-            // else {
-            //     activepreview.style.display = 'block';
-            //     console.log('showed previe block ');
-
-            // }
-
-            const row = activepreview.closest('tr');
-            if (row) {
-                console.log('using for tr');
-                row.style.display = '';
-            }
-            else{
-                const parent_element = activepreview.parentElement;
-                if (parent_element) {
-                    console.log('no tr found');
-                    parent_element.style.display = '';
-                    
-                }
-            }
+        if (activePreview) {
+            const targetElement = activePreview.closest('tr') || activePreview.parentElement || activePreview;
+            targetElement.style.display = '';
+        } else {
+            console.warn("WCGPQ: Active preview element not found for option:", selected);
         }
     }
 
-    // Run on load
-    toggle_forms();
+    // Initial check on load
+    toggleForms();
 
-    // Run on change
-    form_select.addEventListener('change', toggle_forms);
+    // Listen for select dropdown changes
+    formSelect.addEventListener('change', toggleForms);
 });
