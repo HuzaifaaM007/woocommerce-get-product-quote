@@ -36,7 +36,8 @@ require_once plugin_dir_path(__FILE__) . '../includes/wcgpq_forms_templates.php'
 
 function wcgpq_render_forms(string $form_id)
 {
-    $wcgpq_forms = get_option('wcgpq_forms');
+    $default_forms = wcgpq_get_default_forms();
+    $wcgpq_forms = get_option('wcgpq_forms', $default_forms);
 
     if (!isset($wcgpq_forms[$form_id])) {
         return "<p>Form not found </p>";
@@ -48,7 +49,7 @@ function wcgpq_render_forms(string $form_id)
     foreach ($form['fields'] as $field) {
         $form_html .= wcgpq_render_fields($field);
     }
-
+    error_log('line 52 form html: ' . $form_html);
     return $form_html;
 }
 
@@ -60,14 +61,14 @@ function wcgpq_render_forms(string $form_id)
  */
 function wcgpq_render_fields(array $field): string
 {
-    $id          = esc_attr($field['id'] ?? '');
-    $label       = esc_html($field['label'] ?? '');
-    $type        = esc_attr($field['type'] ?? 'text');
-    $is_required = ! empty($field['required']) ? 'required' : '';
-    $req_mark    = ! empty($field['required']) ? ' <span class="required">*</span>' : '';
-    $default     = '';
+    $id          =  esc_attr($field['id']     ?? '');
+    $label       =  esc_html($field['label']  ?? '');
+    $type        =  esc_attr($field['type']   ?? 'text');
+    $is_required = ! empty($field['required']) ?  'required' : '';
+    $req_mark    = ! empty($field['required']) ?  ' <span class="required">*</span>' : '';
+    $default     =  '';
 
-    $raw_value = isset($_POST[$id]) ? wp_unslash($_POST[$id]) : $default;
+    $raw_value   =  isset($_POST[$id]) ? wp_unslash($_POST[$id]) : $default;
 
     if ('hidden' === $type) {
         return sprintf(
@@ -79,8 +80,10 @@ function wcgpq_render_fields(array $field): string
     }
 
     $output = '';
-
+    $log_count = 0;
     if ('checkbox' !== $type) {
+        $log_count++;
+        error_log('line 86 not checkbox : ' . $log_count . ' and type is: ' . $type);
         $output .= '<label for="' . $id . '">' . $label . $req_mark . '</label><br>';
     }
 
@@ -221,12 +224,12 @@ function wcgpq_save_form_handler()
     $clean_fields = array();
     foreach ($raw_fields as $field) {
         if (empty($field['id']) || empty($field['label'])) {
-            continue; 
+            continue;
         }
         $clean_fields[] = array(
             'id'          => sanitize_key($field['id']),
             'label'       => sanitize_text_field($field['label']),
-            'type'        => in_array($field['type'], array('text', 'email', 'textarea', 'number'), true) ? $field['type'] : 'text',
+            'type'        => in_array($field['type'], array('text', 'email', 'textarea', 'number', 'checkbox', 'range', 'tel', 'color', 'file', 'radio', 'url', 'password', 'date'), true) ? $field['type'] : 'text',
             'required'    => !empty($field['required']),
             'placeholder' => sanitize_text_field($field['placeholder']),
             'always_on'   => true,
