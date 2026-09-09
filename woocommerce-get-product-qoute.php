@@ -54,6 +54,19 @@ function wcgpq_add_action_links(array $links)
 
 add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'wcgpq_add_action_links');
 
+add_action('admin_init', 'wcgpq_run_once');
+
+function wcgpq_run_once() {
+    // Check if the task has already been executed
+    if (get_option('wcgpq_has_run_once')) {
+        return;
+    }
+
+    wcgpq_form_updater();
+
+    update_option('wcgpq_has_run_once', true);
+}
+
 function wcgpq_form_updater()
 {
     $wcgpq_forms = get_option('wcgpq_forms');
@@ -67,7 +80,7 @@ function wcgpq_form_updater()
     }
 }
 
-add_action('plugins_loaded', 'wcgpq_form_updater');
+// add_action('plugins_loaded', 'wcgpq_form_updater');
 
 function wcgpq_get_quote_button()
 {
@@ -315,19 +328,30 @@ function wcgpq_handle_quote_request()
     // $company    =  isset($_POST['company'])    ?  sanitize_text_field($_POST['company'])     : '';
     // $quantity   =  isset($_POST['quantity'])   ?  intval($_POST['quantity'])                 :  1;
     // $message    =  isset($_POST['message'])    ?  sanitize_textarea_field($_POST['message']) : '';
-    // $is_cart    =  isset($_POST['is_cart'])    ?  1 : 0;
-    // $is_product =  isset($_POST['is_product']) ?  1 : 0;
+    $is_cart    =  isset($_POST['is_cart'])    ?  1 : 0;
+    $is_product =  isset($_POST['is_product']) ?  1 : 0;
 
-    $wcgpq_selected_form = get_option('wcgpq_form_type');
-    $wcgpq_forms = get_option('wcgpq_forms');
-    $form_defination = $wcgpq_forms[$wcgpq_selected_form] ?? null;
+    $wcgpq_selected_form =  get_option('wcgpq_form_type');
+    $wcgpq_forms         =  get_option('wcgpq_forms');
+    $form_defination     =  $wcgpq_forms[$wcgpq_selected_form] ?? null;
+
     if (!isset($form_defination)) {
         wp_send_json_error('no form selected contact admin !');
     }
 
-    $name = '';
-    $email = '';
-    $dynamic_fields = array();
+    $name            =  '';
+    $email           =  '';
+    $phone           =  '';
+    $company         =  '';
+    $message         =  '';
+    $dynamic_fields  =  array();
+    $reserved_fields =  array(
+        'name'     =>  '',
+        'phone'    =>  '',
+        'email'    =>  '',
+        'company'  =>  '',
+        'message'  =>  '',
+    );
 
 
     if ($form_defination) {
@@ -346,6 +370,7 @@ function wcgpq_handle_quote_request()
                     $email = $value;
                     break;
                 case 'textarea':
+
                     $value = sanitize_textarea_field($raw_value);
                     break;
                 default:
@@ -354,6 +379,18 @@ function wcgpq_handle_quote_request()
 
             if (empty($name) && $field['type'] === 'text' && strpos($field_id, 'name') !== false) {
                 $name = $value;
+            }
+
+            if (empty($phone) && $field['type'] === 'text' && strpos($field_id, 'phone') !== false) {
+                $phone = $value;
+            }
+
+            if (empty($company) && $field['type'] === 'text' && strpos($field_id, 'company') !== false) {
+                $company = $value;
+            }
+
+            if (empty($message) && $field['type'] === 'textarea' && strpos($field_id, 'message') !== false) {
+                $message = $value;
             }
 
             $dynamic_fields[$field['label']] = $value;
@@ -521,7 +558,7 @@ function wcgpq_handle_quote_request()
 add_action('wp_ajax_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 add_action('wp_ajax_nopriv_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 
-function wcgpq_send_email(array $cart_items, string $product_text, string $name, string $email, string $phone, string $company, string|int $quantity, string $message, bool $is_html)
+function wcgpq_send_email(array $cart_items, string $product_text, string $name, string $email, string|null $phone, string|null $company, string|int $quantity, string $message, bool $is_html)
 {
 
     $store_name  = get_bloginfo('name');
