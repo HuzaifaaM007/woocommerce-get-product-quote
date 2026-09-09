@@ -11,28 +11,28 @@ require_once plugin_dir_path(__FILE__) . '../includes/wcgpq_forms_templates.php'
 
 
 
-function wcgpq_save_forms(array $form_data)
-{
-    $form_option = 'wcgpq_forms';
-    $default_forms = wcgpq_get_default_forms();
+// function wcgpq_save_forms(array $form_data)
+// {
+//     $form_option = 'wcgpq_forms';
+//     $default_forms = wcgpq_get_default_forms();
 
-    $wcgpq_forms = get_option($form_option, $default_forms);
+//     $wcgpq_forms = get_option($form_option, $default_forms);
 
-    if (empty($wcgpq_forms)) {
-        return;
-    }
+//     if (empty($wcgpq_forms)) {
+//         return;
+//     }
 
-    foreach ($form_data as $form => $form_details) {
+//     foreach ($form_data as $form => $form_details) {
 
-        if (array_key_exists($form, $wcgpq_forms)) {
-            return;
-        }
+//         if (array_key_exists($form, $wcgpq_forms)) {
+//             return;
+//         }
 
-        $wcgpq_forms[$form] = $form_details;
+//         $wcgpq_forms[$form] = $form_details;
 
-        update_option($form_option, $wcgpq_forms);
-    }
-}
+//         update_option($form_option, $wcgpq_forms);
+//     }
+// }
 
 function wcgpq_render_forms(string $form_id)
 {
@@ -67,10 +67,8 @@ function wcgpq_render_fields(array $field): string
     $req_mark    = ! empty($field['required']) ? ' <span class="required">*</span>' : '';
     $default     = '';
 
-    // Handle repopulation with $_POST or field default fallback
     $raw_value = isset($_POST[$id]) ? wp_unslash($_POST[$id]) : $default;
 
-    // 1. Hidden inputs don't need a label or wrapper div
     if ('hidden' === $type) {
         return sprintf(
             '<input type="hidden" id="%s" name="%s" value="%s" />',
@@ -82,7 +80,6 @@ function wcgpq_render_fields(array $field): string
 
     $output = '';
 
-    // 2. Omit top-level label for checkboxes (label is rendered inline)
     if ('checkbox' !== $type) {
         $output .= '<label for="' . $id . '">' . $label . $req_mark . '</label><br>';
     }
@@ -207,4 +204,57 @@ function wcgpq_render_fields(array $field): string
             );
             return $output;
     }
+}
+
+add_action('admin_post_wcgpq_save_form', 'wcgpq_save_form_handler');
+function wcgpq_save_form_handler()
+{
+    if (!current_user_can('manage_woocommerce') || !isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'wcgpq_save_form_nonce')) {
+        wp_die('Security check failed');
+    }
+
+    $forms    = get_option('wcgpq_forms', array());
+    $form_id  = isset($_POST['form_id']) && $_POST['form_id'] !== '' ? sanitize_key($_POST['form_id']) : sanitize_key($_POST['form_slug']);
+    $name     = sanitize_text_field($_POST['form_name']);
+    $raw_fields = isset($_POST['fields']) ? $_POST['fields'] : array();
+
+    $clean_fields = array();
+    foreach ($raw_fields as $field) {
+        if (empty($field['id']) || empty($field['label'])) {
+            continue; 
+        }
+        $clean_fields[] = array(
+            'id'          => sanitize_key($field['id']),
+            'label'       => sanitize_text_field($field['label']),
+            'type'        => in_array($field['type'], array('text', 'email', 'textarea', 'number'), true) ? $field['type'] : 'text',
+            'required'    => !empty($field['required']),
+            'placeholder' => sanitize_text_field($field['placeholder']),
+            'always_on'   => true,
+        );
+    }
+
+    $forms[$form_id] = array(
+        'name'   => $name,
+        'fields' => $clean_fields,
+    );
+    error_log('saving the form line 501');
+
+    update_option('wcgpq_forms', $forms);
+    $edit_url = admin_url('admin.php?page=wc-settings&tab=wcgpq_settings&section=forms&edit=' . $form_id);
+    wp_redirect($edit_url);
+    exit;
+}
+
+add_action('admin_post_wcgpq_delete_form', 'wcgpq_delete_form_handler');
+function wcgpq_delete_form_handler()
+{
+    if (!current_user_can('manage_woocommerce') || !wp_verify_nonce($_GET['_wpnonce'], 'wcgpq_delete_form')) {
+        error_log('nonce failed 513 settings');
+        wp_die('Security check failed');
+    }
+    $forms = get_option('wcgpq_forms', array());
+    unset($forms[sanitize_key($_GET['form_id'])]);
+    update_option('wcgpq_forms', $forms);
+    wp_redirect(admin_url('admin.php?page=wc-settings&tab=wcgpq_settings&section=forms'));
+    exit;
 }
