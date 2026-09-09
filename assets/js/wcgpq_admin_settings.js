@@ -9,17 +9,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (passwordField) {
         const toggleButton = document.createElement('button');
-        toggleButton.type = 'button';
-        toggleButton.textContent = 'Show';
-        toggleButton.className = 'button';
-        toggleButton.style.marginLeft = '5px';
+        toggleButton.type             =  'button';
+        toggleButton.textContent      =  'Show';
+        toggleButton.className        =  'button';
+        toggleButton.style.marginLeft =  '5px';
 
         passwordField.insertAdjacentElement('afterend', toggleButton);
 
         toggleButton.addEventListener('click', function () {
-            const isPassword = passwordField.type === 'password';
-            passwordField.type = isPassword ? 'text' : 'password';
-            toggleButton.textContent = isPassword ? 'Hide' : 'Show';
+            const isPassword         =  passwordField.type === 'password';
+            passwordField.type       =  isPassword ? 'text' : 'password';
+            toggleButton.textContent =  isPassword ? 'Hide' : 'Show';
         });
     }
 
@@ -58,6 +58,42 @@ document.addEventListener('DOMContentLoaded', function () {
             console.warn("WCGPQ: Active preview element not found for option:", selected);
         }
     }
+
+    function wcgpqDisableUnsavedAlert(targetTab, targetSection) {
+        const urlParams      =  new URLSearchParams(window.location.search);
+        const currentPage    =  urlParams.get('page');
+        const currentTab     =  urlParams.get('tab');
+        const currentSection =  urlParams.get('section') || 'general';
+
+        // Verify we are on WC Settings and matching the specified tab and section
+        if (currentPage !== 'wc-settings' || currentTab !== targetTab || currentSection !== targetSection) {
+            return;
+        }
+
+        const forms = document.querySelectorAll('form');
+
+        forms.forEach(function (form) {
+            // Clear beforeunload listener when submitting the form
+            form.addEventListener('submit', function () {
+                window.onbeforeunload = null;
+            });
+
+            // Remove WooCommerce dirty flag on value changes
+            form.addEventListener('change', function () {
+                form.classList.remove('dirty');
+            });
+        });
+
+        // Clear beforeunload listener when navigating via subnav links
+        const subnavLinks = document.querySelectorAll('.wcgpq-subnav-container a, .subsubsub a');
+        subnavLinks.forEach(function (link) {
+            link.addEventListener('click', function () {
+                window.onbeforeunload = null;
+            });
+        });
+    }
+
+    wcgpqDisableUnsavedAlert('wcgpq_settings', 'forms');
 
     // Initial check on load
     toggleForms();
