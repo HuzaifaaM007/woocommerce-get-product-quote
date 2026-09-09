@@ -126,10 +126,11 @@ function wcgpq_generate_form_preview(string $form_id)
     // Loop through form fields
     if (!empty($form['fields']) && is_array($form['fields'])) {
         foreach ($form['fields'] as $field) {
-            $label       = $field['label'] ?? '';
-            $type        = $field['type'] ?? 'text';
-            // Use explicitly defined placeholder, or fall back to the label if empty
+            $label       = $field['label']               ?? '';
+            $type        = $field['type']                ?? 'text';
             $placeholder = !empty($field['placeholder']) ? $field['placeholder'] : $label;
+            $options     = $field['options']             ?? array();
+            $is_required = ! empty($field['required'])   ?  'required' : '';
 
             $html .= '<p>';
             $html .= '<label>' . esc_html($label) . '</label><br>';
@@ -144,8 +145,10 @@ function wcgpq_generate_form_preview(string $form_id)
                     break;
 
                 case 'radio':
-                    $html .= '<label style="margin-right: 10px;"><input type="radio" disabled checked /> ' . esc_html($placeholder ? $placeholder : 'Radio Option 1') . '</label>';
-                    $html .= '<label><input type="radio" disabled /> Option 2</label>';
+                    foreach ($options as $option) {
+                        $opt_val = esc_attr($option);
+                        $html .= '<label><input type="radio" disabled name="" value="' . $opt_val . '" ' . $is_required . '> ' . esc_html($option) . '</label> ';
+                    }
                     break;
 
                 case 'file':
