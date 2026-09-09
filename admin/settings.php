@@ -10,6 +10,7 @@
 
 
 require_once plugin_dir_path(__FILE__) . '../includes/wcgpq_forms_templates.php';
+require_once plugin_dir_path(__FILE__) . '../admin/wcgpq-form-builder.php';
 
 
 
@@ -41,6 +42,7 @@ function wcgpq_admin_settings()
 {
 
     $config = require_once plugin_dir_path(__FILE__) . '../includes/wcgpq_config.php';
+
     // settings code
     $wcgpq_settings_array   =  array();
 
@@ -102,20 +104,33 @@ function wcgpq_admin_settings()
         'desc_tip'          =>  true
     );
 
-    $wcgpq_settings_array[] = array(
-        'title'             =>  'wcgpq_preview',
-        'type'              =>  'wcgpq_preview',
-        'id'                =>  'wcgpq_preview',
-        'form_id'           =>  'form_a'
+    // $wcgpq_settings_array[] = array(
+    //     'title'             =>  'wcgpq_preview',
+    //     'type'              =>  'wcgpq_preview',
+    //     'id'                =>  'wcgpq_preview',
+    //     'form_id'           =>  'form_a'
 
-    );
+    // );
 
-    $wcgpq_settings_array[] = array(
-        'title'             =>  'wcgpq_preview',
-        'type'              =>  'wcgpq_preview',
-        'id'                =>  'wcgpq_preview',
-        'form_id'           =>  'form_b'
-    );
+    // $wcgpq_settings_array[] = array(
+    //     'title'             =>  'wcgpq_preview',
+    //     'type'              =>  'wcgpq_preview',
+    //     'id'                =>  'wcgpq_preview',
+    //     'form_id'           =>  'form_b'
+    // );
+
+    $forms = get_option('wcgpq_forms', wcgpq_get_default_forms());
+
+    if (!empty($forms) && is_array($forms)) {
+        foreach ($forms as $form_id => $form_data) {
+            $wcgpq_settings_array[] = array(
+                'title'   => 'wcgpq_preview',
+                'type'    => 'wcgpq_preview',
+                'id'      => 'wcgpq_preview_' . $form_id,
+                'form_id' => $form_id,
+            );
+        }
+    }
 
     $wcgpq_settings_array[] = array(
         'title'             =>  __('Mailing Host', 'wcgpq'),
@@ -202,6 +217,197 @@ function wcgpq_admin_settings()
     return $wcgpq_settings_array;
 }
 
+function wcpgpq_render_forms_admin_page()
+{
+    $forms = get_option('wcgpq_forms', array());
+    $editing = isset($_GET['edit']) ? sanitize_text_field($_GET['edit']) : null;
+    $form_data = ($editing && isset($forms[$editing])) ? $forms[$editing] : null;
+
+?>
+    <div class="wrap">
+        <h1><?php echo $editing ? 'Edit Form' : 'Quote Forms'; ?></h1>
+
+        <?php if (!$editing): ?>
+            <table class="widefat">
+                <thead>
+                    <tr>
+                        <th>Form ID</th>
+                        <th>Name</th>
+                        <th>Fields</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($forms as $form_id => $form): ?>
+                        <tr>
+                            <td><?php echo esc_html($form_id); ?></td>
+                            <td><?php echo esc_html($form['name']); ?></td>
+                            <td><?php echo count($form['fields']); ?></td>
+                            <td>
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=wcgpq_settings&section=forms&edit=' . $form_id)); ?>">Edit</a> |
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=wcgpq_delete_form&form_id=' . $form_id), 'wcgpq_delete_form')); ?>" onclick="return confirm('Delete this form?');">Delete</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <p><a href="<?php echo esc_url(admin_url('admin.php?page=wc-settings&tab=wcgpq_settings&section=forms&edit=new')); ?>" class="button button-primary">Add New Form</a></p>
+
+        <?php else: ?>
+            <?php wcgpq_render_form_editor($editing, $form_data); ?>
+        <?php endif; ?>
+    </div>
+<?php
+}
+
+function wcgpq_render_form_editor(string $form_id, array $form_data)
+{
+    $is_new = ($form_id === 'new');
+    $form_name = $form_data ? $form_data['name'] : '';
+    $fields = $form_data ? $form_data['fields'] : array();
+
+?>
+    <div id="wcgpq-form-editor-wrap">
+        <input type="hidden" id="wcgpq-form-id" value="<?php echo $is_new ? '' : esc_attr($form_id); ?>">
+        <?php wp_nonce_field('wcgpq_save_form_nonce', 'wcgpq_nonce_field'); ?>
+
+        <table class="form-table">
+            <tr>
+                <th><label>Form Name</label></th>
+                <td><input type="text" id="wcgpq-form-name" value="<?php echo esc_attr($form_name); ?>" class="regular-text" required></td>
+            </tr>
+            <?php if ($is_new): ?>
+                <tr>
+                    <th><label>Form ID (slug)</label></th>
+                    <td><input type="text" id="wcgpq-form-slug" class="regular-text" pattern="[a-z0-9_]+" required placeholder="e.g. form_b"></td>
+                </tr>
+            <?php endif; ?>
+        </table>
+
+        <h2>Fields</h2>
+        <table class="widefat" id="wcgpq-fields-table">
+            <thead>
+                <tr>
+                    <th>Field ID</th>
+                    <th>Label</th>
+                    <th>Type</th>
+                    <th>Required</th>
+                    <th>Placeholder</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="wcgpq-fields-body">
+                <?php foreach ($fields as $i => $field): ?>
+                    <?php echo wcgpq_render_field_row($i, $field); ?>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <p><button type="button" id="wcgpq-add-field" class="button">+ Add Field</button></p>
+        <p>
+            <button type="button" id="wcgpq-save-form-btn" class="button button-primary">Save Form</button>
+            <span id="wcgpq-save-status" style="margin-left:10px;"></span>
+        </p>
+    </div>
+
+    <script id="wcgpq-field-row-template" type="text/template">
+        <?php echo wcgpq_render_field_row('__INDEX__', array()); ?>
+</script>
+
+    <script>
+        (function() {
+            var body = document.getElementById('wcgpq-fields-body');
+            var addBtn = document.getElementById('wcgpq-add-field');
+            var template = document.getElementById('wcgpq-field-row-template').innerHTML;
+            var counter = <?php echo count($fields); ?>;
+
+            addBtn.addEventListener('click', function() {
+                var row = template.replace(/__INDEX__/g, counter);
+                body.insertAdjacentHTML('beforeend', row);
+                counter++;
+            });
+
+            body.addEventListener('click', function(e) {
+                if (e.target.classList.contains('wcgpq-remove-field')) {
+                    e.target.closest('tr').remove();
+                }
+            });
+
+            document.getElementById('wcgpq-save-form-btn').addEventListener('click', function() {
+                var statusEl = document.getElementById('wcgpq-save-status');
+                statusEl.textContent = 'Saving...';
+
+                var data = new FormData();
+                data.append('action', 'wcgpq_save_form');
+                data.append('_wpnonce', document.getElementById('wcgpq_nonce_field').value);
+                data.append('form_id', document.getElementById('wcgpq-form-id').value);
+                data.append('form_name', document.getElementById('wcgpq-form-name').value);
+
+                var slugField = document.getElementById('wcgpq-form-slug');
+                if (slugField) {
+                    data.append('form_slug', slugField.value);
+                }
+
+                var rows = body.querySelectorAll('tr');
+                rows.forEach(function(row, i) {
+                    data.append('fields[' + i + '][id]', row.querySelector('[name$="[id]"]').value);
+                    data.append('fields[' + i + '][label]', row.querySelector('[name$="[label]"]').value);
+                    data.append('fields[' + i + '][type]', row.querySelector('[name$="[type]"]').value);
+                    var reqBox = row.querySelector('[name$="[required]"]');
+                    if (reqBox && reqBox.checked) {
+                        data.append('fields[' + i + '][required]', '1');
+                    }
+                    data.append('fields[' + i + '][placeholder]', row.querySelector('[name$="[placeholder]"]').value);
+                });
+
+                fetch('<?php echo esc_url_raw(admin_url('admin-post.php')); ?>', {
+                    method: 'POST',
+                    body: data,
+                    credentials: 'same-origin'
+                }).then(function(response) {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        statusEl.textContent = 'Saved.';
+                    }
+                }).catch(function(err) {
+                    statusEl.textContent = 'Error saving form.';
+                    console.error(err);
+                });
+            });
+        })();
+    </script>
+<?php
+}
+
+function wcgpq_render_field_row($index, $field)
+{
+    $id          = isset($field['id']) ? $field['id'] : '';
+    $label       = isset($field['label']) ? $field['label'] : '';
+    $type        = isset($field['type']) ? $field['type'] : 'text';
+    $required    = !empty($field['required']);
+    $placeholder = isset($field['placeholder']) ? $field['placeholder'] : '';
+    ob_start();
+?>
+    <tr>
+        <td><input type="text" name="fields[<?php echo $index; ?>][id]" value="<?php echo esc_attr($id); ?>" required></td>
+        <td><input type="text" name="fields[<?php echo $index; ?>][label]" value="<?php echo esc_attr($label); ?>" required></td>
+        <td>
+            <select name="fields[<?php echo $index; ?>][type]">
+                <option value="text" <?php selected($type, 'text'); ?>>Text</option>
+                <option value="email" <?php selected($type, 'email'); ?>>Email</option>
+                <option value="textarea" <?php selected($type, 'textarea'); ?>>Textarea</option>
+                <option value="number" <?php selected($type, 'number'); ?>>Number</option>
+            </select>
+        </td>
+        <td><input type="checkbox" name="fields[<?php echo $index; ?>][required]" value="1" <?php checked($required); ?>></td>
+        <td><input type="text" name="fields[<?php echo $index; ?>][placeholder]" value="<?php echo esc_attr($placeholder); ?>"></td>
+        <td><button type="button" class="button wcgpq-remove-field">Remove</button></td>
+    </tr>
+<?php
+    return ob_get_clean();
+}
+
 // Output the previews directly
 function wcgpq_output_form_previews()
 {
@@ -219,8 +425,9 @@ function wcgpq_output_form_previews()
     <div class="wcgpq-preview-section">
         <h2>Form Preview</h2>
         <p>Below is how your selected form will look:</p>
-        <?php echo wcgpq_generate_form_preview('form_a') ?>
-        <?php echo wcgpq_generate_form_preview('form_b') ?>
+        <?php
+        $selected_form = get_option('wcgpq_form_type');
+        echo wcgpq_generate_form_preview($selected_form) ?>
     </div>
 <?php
 }
@@ -237,7 +444,45 @@ add_filter('woocommerce_settings_tabs_array', 'wcgpq_add_settings_tab', 50);
 // Display Settings content
 function wcgpq_settings_tab_content()
 {
-    woocommerce_admin_fields(wcgpq_admin_settings());
+?>
+    <div class="wcgpq-settings-header" style="background:#fff; padding: 15px; border:1px solid #ccc; border-left:4px solid #25D366; margin: bottom 20px;">
+        <h2 style="margin:0 0 5px 0; "><?php _e('Get Product Quote', 'wcgpq'); ?></h2>
+        <p style="margin:0;"><?php _e('Need assistance? Check out our <a href="#" target="_blank">Documentation</a> or submit a <a href="#" target="_blank">Support Ticket</a>.', 'wcgpq'); ?></p>
+    </div>
+<?php
+
+    $current_section =  isset($_GET['section']) ? sanitize_text_field(wp_unslash($_GET['section'])) : 'general';
+    $sections        =  array(
+        'general'    =>  __('General Settings', 'wcgpq'),
+        'forms'      =>  __('Form Settings', 'wcgpq'),
+    );
+    echo '<div class="wcgpq-subnav-container">';
+    echo '<ul class="subsubsub">';
+
+    foreach ($sections as $id => $label) {
+        $url        = admin_url('admin.php?page=wc-settings&tab=wcgpq_settings&section=' . urlencode($id));
+        $is_current = ($current_section === $id);
+        $class_attr = $is_current ? ' class="current"' : '';
+        $aria_attr  = $is_current ? ' aria-current="page"' : '';
+
+        echo '<li><a href="' . esc_url($url) . '"' . $class_attr . $aria_attr . '>' . esc_html($label) . '</a></li>';
+    }
+
+    echo '</ul>';
+    echo '</div>';
+
+    switch ($current_section) {
+        case 'forms':
+            echo '<style>.woocommerce-save-button { display: none; }</style>';
+            echo '<h3>' . esc_html__('Forms Settings', 'wcgpq') . '</h3>';
+            wcpgpq_render_forms_admin_page();
+            break;
+        case 'general':
+        default:
+            echo '<h3>' . esc_html__('General Settings', 'wcgpq') . '</h3>';
+            woocommerce_admin_fields(wcgpq_admin_settings());
+            break;
+    }
 }
 
 add_action('woocommerce_settings_tabs_wcgpq_settings', 'wcgpq_settings_tab_content');
@@ -245,6 +490,12 @@ add_action('woocommerce_settings_tabs_wcgpq_settings', 'wcgpq_settings_tab_conte
 // Save Settings
 function wcgpq_save_settings()
 {
+    $current_section = isset($_GET['section']) ? sanitize_text_field(wp_unslash($_GET['section'])) : 'general';
+
+    if ($current_section === 'forms') {
+        return;
+    }
+
     woocommerce_update_options(wcgpq_admin_settings());
 }
 
