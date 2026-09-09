@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         else if (!is_cart) {
-            console.log('product page is: ' + is_cart);
+            console.log('product page is: ' + !is_cart);
             product_id_input.value = data;
         }
 
