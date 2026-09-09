@@ -97,7 +97,7 @@ function wcgpq_get_default_forms()
 // get form Choices
 function wcgpq_get_form_choices()
 {
-    $forms   = wcgpq_get_default_forms();
+    $forms   = get_option('wcgpq_forms', array());
     $choices = array();
 
     foreach ($forms as $id => $form) {
@@ -108,32 +108,46 @@ function wcgpq_get_form_choices()
 }
 
 // Generate html preview of selected form
-function wcgpq_generate_form_preview($form_id)
+function wcgpq_generate_form_preview(string $form_id)
 {
-    $forms = wcgpq_get_default_forms();
+    $default_forms = wcgpq_get_default_forms();
+    $forms         = get_option('wcgpq_forms', $default_forms); // Fallback to defaults if DB option is missing
 
+    // Check if form ID exists
     if (!isset($forms[$form_id])) {
-        return "<p>Form not found </p>";
+        return "<p>Form not found</p>";
     }
 
-    $form  =  $forms[$form_id];
+    $form = $forms[$form_id];
 
-    $html  =  '<div class="wcgpq-form-preview wcgpq-preview-' . $form_id . '">';
-    $html .=  '<h3>' . $form['name'] . '</h3>';
+    $html  = '<div class="wcgpq-form-preview wcgpq-preview-' . esc_attr($form_id) . '">';
+    $html .= '<h3>' . esc_html($form['name'] ?? 'Form Preview') . '</h3>';
 
-    // Loop through fields
-    foreach ($form['fields'] as $field) {
-        $html      .=  '<p>';
-        $html      .=  '<label>' . $field['label'] . '</label><br>';
-        $input_line =  '<input type="' . $field['type'] . '" placeholder="' . $field['label'] . '" disabled>';
-        // $html .= '<input type="' . $field['type'] . '" placeholder="' . $field['label'] . '" disabled>';
-        error_log('input html' . $input_line);
-        $html      .=  $input_line;
-        $html      .=  '</p>';
+    // Loop through form fields
+    if (!empty($form['fields']) && is_array($form['fields'])) {
+        foreach ($form['fields'] as $field) {
+            $label       = $field['label'] ?? '';
+            $type        = $field['type'] ?? 'text';
+            // Use explicitly defined placeholder, or fall back to the label if empty
+            $placeholder = !empty($field['placeholder']) ? $field['placeholder'] : $label;
+
+            $html .= '<p>';
+            $html .= '<label>' . esc_html($label) . '</label><br>';
+
+            // Fix for textarea vs standard HTML inputs
+            if ($type === 'textarea') {
+                $html .= '<textarea placeholder="' . esc_attr($placeholder) . '" disabled></textarea>';
+            } else {
+                $html .= '<input type="' . esc_attr($type) . '" placeholder="' . esc_attr($placeholder) . '" disabled>';
+            }
+
+            $html .= '</p>';
+        }
     }
 
-    $html          .=  '<br><button style="margin-top:10;" type="submit" class="button" id="wcgpq-form-button" disabled>Request Quote</button>';
-    $html          .=  '</div>';
+    $html .= '<br><button style="margin-top:10px;" type="submit" class="button" id="wcgpq-form-button" disabled>Request Quote</button>';
+    $html .= '</div>';
 
+    error_log('printing the html 151' . $html);
     return $html;
 }
