@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 
-function wcgpq_create_forms_table() {
-    
+function wcgpq_create_forms_table()
+{
+    //will add something if needed
 }
