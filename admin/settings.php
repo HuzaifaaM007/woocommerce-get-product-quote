@@ -245,7 +245,7 @@ function wcpgpq_render_forms_admin_page()
 <?php
 }
 
-function wcgpq_render_form_editor(string $form_id, array $form_data)
+function wcgpq_render_form_editor(string $form_id, array|null $form_data)
 {
     $is_new    =  ($form_id === 'new');
     $form_name =  $form_data ? $form_data['name']   : '';
@@ -336,17 +336,23 @@ function wcgpq_render_form_editor(string $form_id, array $form_data)
 
                 var rows = body.querySelectorAll('tr');
                 rows.forEach(function(row, i) {
-                    data.append('fields[' + i + '][id]', row.querySelector('[name$="[id]"]').value);
-                    data.append('fields[' + i + '][label]', row.querySelector('[name$="[label]"]').value);
-                    data.append('fields[' + i + '][type]', row.querySelector('[name$="[type]"]').value);
+                    var idEl = row.querySelector('[name$="[id]"]');
+                    var labelEl = row.querySelector('[name$="[label]"]');
+                    var typeEl = row.querySelector('[name$="[type]"]');
+                    var phEl = row.querySelector('[name$="[placeholder]"]');
+                    var optEl = row.querySelector('[name$="[options]"]');
+
+                    if (idEl) data.append('fields[' + i + '][id]', idEl.value);
+                    if (labelEl) data.append('fields[' + i + '][label]', labelEl.value);
+                    if (typeEl) data.append('fields[' + i + '][type]', typeEl.value);
+
                     var reqBox = row.querySelector('[name$="[required]"]');
                     if (reqBox && reqBox.checked) {
                         data.append('fields[' + i + '][required]', '1');
                     }
-                    data.append('fields[' + i + '][placeholder]', row.querySelector('[name$="[placeholder]"]').value);
-                    data.append('fields[' + i + '][options]', row.querySelector('[name$="[options]"]').value);
+                    if (phEl) data.append('fields[' + i + '][placeholder]', phEl.value);
+                    if (optEl) data.append('fields[' + i + '][options]', optEl.value);
                 });
-
                 fetch('<?php echo esc_url_raw(admin_url('admin-post.php')); ?>', {
                     method: 'POST',
                     body: data,
@@ -366,40 +372,70 @@ function wcgpq_render_form_editor(string $form_id, array $form_data)
             document.addEventListener('change', function(e) {
                 // Check if the changed element is a field type select dropdown
                 if (e.target && e.target.matches('select[name$="[type]"]')) {
-                    const select =  e.target;
-                    const row    =  select.closest('tr');
+                    const select = e.target;
+                    const row = select.closest('tr');
                     if (!row) return;
 
-                    const selectedType =  select.value;
-                    const optionsCell  =  row.querySelector('.wcgpq-options-cell');
+                    const selectedType = select.value;
+                    const rowIndex = getRowIndex(row);
+                    const optionsCell = row.querySelector('.wcgpq-options-cell');
+                    const placeHolderCell = row.querySelector('.wcgpq-placeholder-cell');
 
                     if (!optionsCell) return;
+                    if (!placeHolderCell) return;
+
 
                     // Field types that require options
                     const typesWithOptions = ['radio', 'select', 'checkbox'];
+                    const typesWithPlaceholders = ['text', 'number', 'email', 'file', 'textarea', 'tel', 'url', 'date', 'time', 'color'];
 
                     if (typesWithOptions.includes(selectedType)) {
                         // Get existing value if restoring from disabled state
-                        const currentInput =  optionsCell.querySelector('input');
-                        const previousVal  =  currentInput ? currentInput.dataset.previousValue || '' : '';
+                        const currentInput = optionsCell.querySelector('input');
+                        const previousVal = currentInput ? currentInput.dataset.previousValue || '' : '';
 
                         optionsCell.innerHTML = `
                 <input type="text" 
-                       name="fields[${getRowIndex(row)}][options]" 
+                       name="fields[${rowIndex}][options]" 
                        value="${previousVal}" 
                        placeholder="Comma-separated values">
             `;
                     } else {
                         // Store value temporarily in dataset before disabling, in case user switches back
-                        const currentInput =  optionsCell.querySelector('input');
-                        const savedValue   =  currentInput ? currentInput.value : '';
+                        const currentInput = optionsCell.querySelector('input');
+                        const savedValue = currentInput ? currentInput.value : '';
 
                         optionsCell.innerHTML = `
-                <input type="text" 
-                       disabled 
-                       value="disabled" 
-                       data-previous-value="${savedValue}">
+                        <input type="text" 
+                               name="fields[${rowIndex}][options]"
+                               disabled 
+                               value="no options" 
+                               data-previous-value="${savedValue}">
             `;
+                    }
+
+                    if (typesWithPlaceholders.includes(selectedType)) {
+                        // Get existing value if restoring from disabled state
+                        const PLCurrentInput = placeHolderCell.querySelector('input');
+                        const previousVal = PLCurrentInput ? PLCurrentInput.dataset.previousValue || '' : '';
+
+                        placeHolderCell.innerHTML = `
+                        <input type="text" 
+                               name="fields[${getRowIndex(row)}][placeholder]" 
+                               value="${previousVal}" 
+                               placeholder="placeholder">
+            `;
+                    } else {
+                        const PLCurrentInput = placeHolderCell.querySelector('input');
+                        const savedValue = PLCurrentInput ? PLCurrentInput.value : '';
+
+                        placeHolderCell.innerHTML = `
+                            <input type="text" 
+                                name="fields[${rowIndex}][placeholder]"
+                                disabled 
+                                value="no placeholder" 
+                                data-previous-value="${savedValue}">
+                        `;
                     }
                 }
             });
@@ -408,8 +444,8 @@ function wcgpq_render_form_editor(string $form_id, array $form_data)
             function getRowIndex(row) {
                 const input = row.querySelector('[name^="fields["]');
                 if (input) {
-                    const  match =  input.name.match(/fields\[(\d+)\]/);
-                    return match ?  match[1] : 0;
+                    const match = input.name.match(/fields\[(\d+)\]/);
+                    return match ? match[1] : 0;
                 }
                 return 0;
             }
@@ -418,7 +454,7 @@ function wcgpq_render_form_editor(string $form_id, array $form_data)
 <?php
 }
 
-function wcgpq_render_field_row(int|string $index,array $field)
+function wcgpq_render_field_row(int|string $index, array $field)
 {
     $id          =  isset($field['id'])          ? $field['id']          : '';
     $label       =  isset($field['label'])       ? $field['label']       : '';
@@ -458,7 +494,16 @@ function wcgpq_render_field_row(int|string $index,array $field)
         </td>
 
         <td><input type="checkbox" name="fields[<?php echo $index; ?>][required]" value="1" <?php checked($required); ?>></td>
-        <td><input type="text" name="fields[<?php echo $index; ?>][placeholder]" value="<?php echo esc_attr($placeholder); ?>"></td>
+        <td class="wcgpq-placeholder-cell">
+            <?php if ($type === 'textarea' || $type === 'text' || $type === 'email'): ?>
+                <input type="text"
+                    name="fields[<?php echo $index; ?>][placeholder]"
+                    value="<?php echo esc_attr($placeholder); ?>"
+                    placeholder="placeholder">
+            <?php else: ?>
+                <input type="text" disabled value="disabled">
+            <?php endif; ?>
+        </td>
         <td class="wcgpq-options-cell">
             <?php if ($type === 'radio' || $type === 'select' || $type === 'checkbox'): ?>
                 <input type="text"
