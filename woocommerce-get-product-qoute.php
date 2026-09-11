@@ -56,7 +56,8 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'wcgpq_add_action
 
 add_action('admin_init', 'wcgpq_run_once');
 
-function wcgpq_run_once() {
+function wcgpq_run_once()
+{
     // Check if the task has already been executed
     if (get_option('wcgpq_has_run_once')) {
         return;
@@ -431,7 +432,7 @@ function wcgpq_handle_quote_request()
     $post_data              =  array();
     $cart_items             =  array();
     $product_text           =  "";
-    $submitted_fields_text  =  "Submitted Form Fields:\n\n";
+    $submitted_fields_text  =  "Submitted custom Form Fields from customer:\n\n";
 
     foreach ($dynamic_fields as $label => $value) {
         $submitted_fields_text .= "{$label}: {$value}\n";
@@ -544,7 +545,7 @@ function wcgpq_handle_quote_request()
 
 
 
-    $email_sent = wcgpq_send_email($cart_items, $product_text,  $name, $email, $phone, $company, $quantity, $message, $is_html);
+    $email_sent = wcgpq_send_email($cart_items, $product_text,  $name, $email, $phone, $company, $quantity, $message, $submitted_fields_text, $is_html);
 
     if ($email_sent) {
         wcgpq_insert_quote_request_post($post_data, $email);
@@ -558,7 +559,7 @@ function wcgpq_handle_quote_request()
 add_action('wp_ajax_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 add_action('wp_ajax_nopriv_wcgpq_send_quote', 'wcgpq_handle_quote_request');
 
-function wcgpq_send_email(array $cart_items, string $product_text, string $name, string $email, string|null $phone, string|null $company, string|int $quantity, string $message, bool $is_html)
+function wcgpq_send_email(array $cart_items, string $product_text, string $name, string $email, string|null $phone, string|null $company, string|int $quantity, string $message, string $submitted_fields_text, bool $is_html)
 {
 
     $store_name  = get_bloginfo('name');
@@ -581,7 +582,7 @@ function wcgpq_send_email(array $cart_items, string $product_text, string $name,
         $cart_quote_template = get_option('wcgpq_email_template_for_cart_quote', '');
 
         if (empty($cart_quote_template)) {
-            $cart_quote_template = "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n" . (!empty($company) ? "Company: {company}\n" : "") . "Phone: {phone}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\nRegards,\n{store_name}";
+            $cart_quote_template = "New Quote Request Received\n\nA customer has requested a quote for their cart. Here are the details:\n\nCustomer Name: {name}\nCustomer Email: {email}\n" . (!empty($company) ? "Company: {company}\n" : "") . "Phone: {phone}\n\nRequested Items:\n{cart_items}\n\nTotal Quantity: {total_quantity}\n\nCustomer Message:\n{message}\n\n{submitted_fields_text}\n\nRegards,\n{store_name}";
         }
 
         $cart_items_text = "";
@@ -602,8 +603,8 @@ function wcgpq_send_email(array $cart_items, string $product_text, string $name,
         $admin_quote_link = admin_url('post.php?post=' . $product->get_id() . '&action=edit');
 
         $email_body = str_replace(
-            array('{name}', '{email}', '{cart_items}', '{company}', '{total_quantity}', '{message}', '{store_name}'),
-            array($name, $email, $cart_items_text, $company, $total_quantity, $message, $store_name),
+            array('{name}', '{email}', '{cart_items}', '{company}', '{total_quantity}', '{message}', '{submitted_fields_text}', '{store_name}'),
+            array($name, $email, $cart_items_text, $company, $total_quantity, $message, $submitted_fields_text, $store_name),
             $cart_quote_template
         );
 
@@ -616,8 +617,8 @@ function wcgpq_send_email(array $cart_items, string $product_text, string $name,
         }
 
         $email_body = str_replace(
-            array('{name}', '{email}', '{company}', '{phone}', '{product_details}', '{message}', '{store_name}'),
-            array($name, $email, $company, $phone, $product_text, $message, $store_name),
+            array('{name}', '{email}', '{company}', '{phone}', '{product_details}', '{message}', '{submitted_fields_text}', '{store_name}'),
+            array($name, $email, $company, $phone, $product_text, $message, $submitted_fields_text, $store_name),
             $product_quote_template
         );
 
