@@ -700,6 +700,40 @@ function wcgpq_create_quote_request_cpt()
 
 add_action('init', 'wcgpq_create_quote_request_cpt');
 
+//new work 14/10/2026
+function wcgpq_add_reply_button($actions, $post)
+{
+    if ($post->post_type === 'quote_request') {
+        $url = admin_url('admin.php?page=quote-request-reply&post_id=' . $post->ID);
+        $actions['reply'] = '<a href="' . esc_url($url) . '">Reply</a>';
+    }
+
+    return $actions;
+}
+
+add_filter('post_row_actions', 'wcgpq_add_reply_button', 10, 2);
+
+//part of work 14/10/2026
+function wcgpq_add_quote_reply_page()
+{
+    add_submenu_page(null, 'Reply to Quote Requests', 'Reply to Quote', 'edit_posts', 'quote-request-reply', 'wcgpq_quote_request_reply_render');
+}
+
+add_action('admin_menu', 'wcgpq_add_quote_reply_page');
+
+function wcgpq_quote_request_reply_render()
+{
+    $post_id =  absint($_GET['post_id'] ?? 0);
+    $post    =  get_post($post_id);
+
+    if (!$post || !current_user_can('edit_post', $post_id)) {
+        wp_die('Invalid request !');
+    }
+
+    $to = get_post_meta($post_id . '_customer_email');
+    
+}
+
 function wcgpq_insert_quote_request_post($post_data, $email)
 {
 

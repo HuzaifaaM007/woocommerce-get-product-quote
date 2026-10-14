@@ -1,0 +1,8 @@
+{
+    "name": "example/pdf-docs-sample",
+    "description": "Invoice and quotation PDFs with mPDF and Dompdf",
+    "type": "wordpress-plugin",
+    "require": {
+        "mpdf/mpdf": "^8.2"
+    }
+}
